@@ -4,7 +4,7 @@ import MainLayout from '../layouts/MainLayout.vue'
 
 import LoginPage from '../views/auth/LoginPage.vue'
 import RegisterPage from '../views/auth/RegisterPage.vue'
-import DashboardPage from '../views/DashboardPage.vue'
+import DashboardPage from '../views/dashboard/DashboardPage.vue'
 import ExpensesPage from '../views/ExpensesPage.vue'
 
 const router = createRouter({

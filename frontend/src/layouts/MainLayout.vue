@@ -1,13 +1,13 @@
 <template>
   <div class="layout">
 
-    <MainNavbar />
+    <MainSidebar />
 
-    <div class="content">
+    <div class="main">
 
-      <MainSidebar />
+      <MainNavbar />
 
-      <main class="page">
+      <main class="content">
         <router-view />
       </main>
 
@@ -21,3 +21,27 @@
 import MainNavbar from '../components/ui/MainNavbar.vue'
 import MainSidebar from '../components/ui/MainSidebar.vue'
 </script>
+
+
+<style scoped>
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+
+.content {
+  padding: 30px;
+  flex: 1;
+}
+
+</style>
