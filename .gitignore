@@ -1,0 +1,20 @@
+# macOS
+.DS_Store
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# Java and Maven
+backend/target/
+*.log
+
+# Local configuration and secrets
+.env
+backend/src/main/resources/application-local.yml
+backend/src/main/resources/application-local.properties
+
+# Vue and Node.js
+frontend/node_modules/
+frontend/dist/
+
