@@ -11,13 +11,24 @@
 
     <div class="cards">
 
-      <BalanceCard />
+      <BalanceCard 
+        :data="dashboardCards[0]"
+      />
 
-      <IncomeCard />
 
-      <ExpenseCard />
+      <IncomeCard
+        :data="dashboardCards[1]"
+      />
 
-      <SavingsCard />
+
+      <ExpenseCard
+        :data="dashboardCards[2]"
+      />
+
+
+      <SavingsCard
+        :data="dashboardCards[3]"
+      />
 
     </div>
 
@@ -28,116 +39,17 @@
     <div class="charts">
 
 
-      <div class="chart-box">
+      <ExpenseOverviewChart
+        :data="expensesOverviewData"
+      />
 
-        <h2>
-          Expenses Overview
-        </h2>
+      <CategoryExpenseChart
+        :data="categoryExpenseData"
+      />
 
-        <p>
-          Chart will be here
-        </p>
-
-      </div>
-
-
-
-      <div class="chart-box">
-
-        <h2>
-          Expenses by Category
-        </h2>
-
-        <p>
-          Chart will be here
-        </p>
-
-      </div>
-
-
-    </div>
-
-
-
-
-    <!-- Transactions -->
-
-    <div class="transactions">
-
-
-      <h2>
-        Recent Transactions
-      </h2>
-
-
-      <table>
-
-        <thead>
-
-          <tr>
-
-            <th>Date</th>
-
-            <th>Description</th>
-
-            <th>Category</th>
-
-            <th>Amount</th>
-
-          </tr>
-
-        </thead>
-
-
-        <tbody>
-
-          <tr>
-
-            <td>
-              Jul 13, 2026
-            </td>
-
-            <td>
-              Grocery Shopping
-            </td>
-
-            <td>
-              Food
-            </td>
-
-            <td class="expense">
-              -$75.50
-            </td>
-
-          </tr>
-
-
-
-          <tr>
-
-            <td>
-              Jul 12, 2026
-            </td>
-
-            <td>
-              Salary
-            </td>
-
-            <td>
-              Income
-            </td>
-
-            <td class="income">
-              +$2500
-            </td>
-
-          </tr>
-
-
-        </tbody>
-
-
-      </table>
+      <RecentTransactions
+        :transactions="transactions"
+      />
 
 
     </div>
@@ -152,15 +64,31 @@
 
 <script setup>
 
+import BalanceCard from '@/components/dashboard/cards/BalanceCard.vue'
+import IncomeCard from '@/components/dashboard/cards/IncomeCard.vue'
+import ExpenseCard from '@/components/dashboard/cards/ExpenseCard.vue'
+import SavingsCard from '@/components/dashboard/cards/SavingsCard.vue'
 
-import BalanceCard from '@/components/dashboard/BalanceCard.vue'
+import ExpenseOverviewChart from '@/components/dashboard/charts/ExpenseOverviewChart.vue'
+import CategoryExpenseChart from '@/components/dashboard/charts/CategoryExpenseChart.vue'
 
-import IncomeCard from '@/components/dashboard/IncomeCard.vue'
+import RecentTransactions from '@/components/dashboard/RecentTransactions.vue'
 
-import ExpenseCard from '@/components/dashboard/ExpenseCard.vue'
+import {
+ dashboardCards
+} from '@/data/dashboardData'
 
-import SavingsCard from '@/components/dashboard/SavingsCard.vue'
+import {
+  transactions
+} from '@/data/dashboardData'
 
+import {
+
+expensesOverviewData,
+
+categoryExpenseData
+
+} from '@/data/dashboardData'
 
 </script>
 
