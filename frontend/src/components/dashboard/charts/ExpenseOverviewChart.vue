@@ -1,184 +1,115 @@
-<template>
-
-  <div class="chart-container">
-
-    <h2>
-      Expenses Overview
-    </h2>
-
-
-    <v-chart
-      class="chart"
-      :option="option"
-      autoresize
-    />
-
-
-  </div>
-
-</template>
-
-
-
 <script setup>
 
-import { computed } from 'vue'
-
-
-import { use } from 'echarts/core'
-
-import { CanvasRenderer } from 'echarts/renderers'
-
-import { BarChart } from 'echarts/charts'
-
-
-import {
-
-  GridComponent,
-  TooltipComponent
-
-} from 'echarts/components'
-
-
-import VChart from 'vue-echarts'
-
-
-
-use([
-
-  CanvasRenderer,
-
-  BarChart,
-
-  GridComponent,
-
-  TooltipComponent
-
-])
-
+import { onMounted, ref } from 'vue'
+import Chart from 'chart.js/auto'
 
 
 const props = defineProps({
 
-  data:{
-    type:Object,
-    required:true
-  }
+data:{
+type:Object,
+required:true
+}
 
 })
 
 
-
-const option = computed(() => ({
-
-
-  tooltip:{
-
-    trigger:"axis"
-
-  },
+const chart = ref(null)
 
 
-  grid:{
 
-    left:"5%",
-    right:"5%",
-    bottom:"10%",
-    containLabel:true
-
-  },
+onMounted(()=>{
 
 
-  xAxis:{
-
-    type:"category",
-
-    data:props.data.labels
-
-  },
+new Chart(chart.value, {
 
 
-  yAxis:{
-
-    type:"value"
-
-  },
+type:'bar',
 
 
-  series:[
-
-    {
-
-      name:"Expenses",
-
-      type:"bar",
-
-      data:props.data.values,
+data:{
 
 
-      barWidth:"45%",
+labels: props.data.labels,
 
 
-      itemStyle:{
+datasets:[
 
-        borderRadius:[
-          8,
-          8,
-          0,
-          0
-        ]
+{
 
-      }
+label:'Expenses',
 
-    }
-
-  ]
+data:props.data.values,
 
 
-}))
+backgroundColor:'#3b82f6',
+
+borderRadius:8
+
+}
+
+]
+
+
+},
+
+
+
+options:{
+
+
+responsive:true,
+
+
+plugins:{
+
+
+legend:{
+
+
+display:false
+
+
+}
+
+
+},
+
+
+
+scales:{
+
+
+y:{
+
+
+beginAtZero:true
+
+
+}
+
+
+}
+
+
+}
+
+
+
+})
+
+
+})
 
 
 </script>
 
 
 
-<style scoped>
+<template>
 
 
-.chart-container{
+<canvas ref="chart"></canvas>
 
 
-background:white;
-
-border-radius:20px;
-
-padding:30px;
-
-height:350px;
-
-
-}
-
-
-
-h2{
-
-margin-bottom:20px;
-
-font-size:22px;
-
-}
-
-
-
-.chart{
-
-width:100%;
-
-height:260px;
-
-}
-
-
-
-</style>
+</template>

@@ -83,15 +83,14 @@ WalletWise
 <style scoped>
 
 aside {
-  width: 250px;
-  min-height: 100vh;
+  width:250px;
 
-  background: #111827;
+  min-height:calc(100vh - 60px);
 
-  padding: 25px;
+  background:#111827;
 
-  display:flex;
-  flex-direction:column;
+  padding:20px;
+
 }
 
 

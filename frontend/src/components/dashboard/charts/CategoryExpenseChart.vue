@@ -1,168 +1,99 @@
-<template>
-
-
-<div class="chart-container">
-
-
-<h2>
-Expenses by Category
-</h2>
-
-
-
-<v-chart
-
-class="chart"
-
-:option="option"
-
-autoresize
-
-/>
-
-
-</div>
-
-
-</template>
-
-
-
-
 <script setup>
 
 
-import { computed } from 'vue'
+import { onMounted, ref } from 'vue'
 
-
-import { use } from 'echarts/core'
-
-
-import { CanvasRenderer } from 'echarts/renderers'
-
-
-import { PieChart } from 'echarts/charts'
-
-
-import {
-
-TooltipComponent,
-
-LegendComponent
-
-} from 'echarts/components'
-
-
-import VChart from 'vue-echarts'
-
-
-
-use([
-
-CanvasRenderer,
-
-PieChart,
-
-TooltipComponent,
-
-LegendComponent
-
-])
-
+import Chart from 'chart.js/auto'
 
 
 
 const props = defineProps({
 
 data:{
-
 type:Object,
-
 required:true
-
 }
 
 })
 
 
+const chart = ref(null)
 
 
 
-const option = computed(() => ({
+onMounted(()=>{
 
 
-tooltip:{
-
-trigger:"item"
-
-},
+new Chart(chart.value,{
 
 
-
-legend:{
-
-orient:"vertical",
-
-right:0,
-
-top:"center"
-
-},
+type:'doughnut',
 
 
 
-series:[
+data:{
 
+
+labels:props.data.labels,
+
+
+datasets:[
 
 {
 
-name:"Expenses",
 
-type:"pie",
-
-
-radius:[
-
-"40%",
-
-"70%"
-
-],
+data:props.data.values,
 
 
+backgroundColor:[
 
-data:props.data.labels.map(
-
-(label,index)=>(
-
-{
-
-name:label,
-
-value:props.data.values[index]
-
-}
-
-)
-
-),
-
-
-label:{
-
-show:false
-
-}
-
-
-
-}
-
+'#3b82f6',
+'#22c55e',
+'#f59e0b',
+'#ef4444',
+'#8b5cf6'
 
 ]
 
 
-}))
+}
+
+]
+
+
+},
+
+
+
+options:{
+
+
+responsive:true,
+
+
+plugins:{
+
+
+legend:{
+
+
+position:'right'
+
+
+}
+
+
+}
+
+
+}
+
+
+
+})
+
+
+})
 
 
 
@@ -171,45 +102,10 @@ show:false
 
 
 
-<style scoped>
+<template>
 
 
-.chart-container{
+<canvas ref="chart"></canvas>
 
 
-background:white;
-
-border-radius:20px;
-
-padding:30px;
-
-height:350px;
-
-
-}
-
-
-
-h2{
-
-font-size:22px;
-
-margin-bottom:20px;
-
-}
-
-
-
-.chart{
-
-
-width:100%;
-
-height:260px;
-
-
-}
-
-
-
-</style>
+</template>

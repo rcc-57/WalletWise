@@ -26,22 +26,43 @@ import MainSidebar from '../components/ui/MainSidebar.vue'
 <style scoped>
 
 .layout {
-  display: flex;
-  min-height: 100vh;
-  background: #f8fafc;
+
+  display:flex;
+
+  min-height:100vh;
+
+  background:#f8fafc;
+
 }
 
+
+/* правая часть */
 
 .main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+
+  flex:1;
+
+  display:flex;
+
+  flex-direction:column;
+
+  min-width:0;
+
 }
 
+
+
+/* место где страницы */
 
 .content {
-  padding: 30px;
-  flex: 1;
+
+flex:1;
+
+padding:24px 32px;
+
+overflow-x:hidden;
+
 }
+
 
 </style>

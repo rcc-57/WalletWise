@@ -1,96 +1,127 @@
-<template>
-
-  <div class="dashboard">
-
-    <h1>
-      Dashboard
-    </h1>
-
-
-    <!-- Cards -->
-
-    <div class="cards">
-
-      <BalanceCard 
-        :data="dashboardCards[0]"
-      />
-
-
-      <IncomeCard
-        :data="dashboardCards[1]"
-      />
-
-
-      <ExpenseCard
-        :data="dashboardCards[2]"
-      />
-
-
-      <SavingsCard
-        :data="dashboardCards[3]"
-      />
-
-    </div>
-
-
-
-    <!-- Charts placeholder -->
-
-    <div class="charts">
-
-
-      <ExpenseOverviewChart
-        :data="expensesOverviewData"
-      />
-
-      <CategoryExpenseChart
-        :data="categoryExpenseData"
-      />
-
-      <RecentTransactions
-        :transactions="transactions"
-      />
-
-
-    </div>
-
-
-  </div>
-
-
-</template>
-
-
-
 <script setup>
+
+import {
+  dashboardCards,
+  expenseOverviewData,
+  categoryExpenseData,
+  transactions
+} from '@/data/dashboardData'
+
 
 import BalanceCard from '@/components/dashboard/cards/BalanceCard.vue'
 import IncomeCard from '@/components/dashboard/cards/IncomeCard.vue'
 import ExpenseCard from '@/components/dashboard/cards/ExpenseCard.vue'
 import SavingsCard from '@/components/dashboard/cards/SavingsCard.vue'
 
+
 import ExpenseOverviewChart from '@/components/dashboard/charts/ExpenseOverviewChart.vue'
 import CategoryExpenseChart from '@/components/dashboard/charts/CategoryExpenseChart.vue'
 
-import RecentTransactions from '@/components/dashboard/RecentTransactions.vue'
 
-import {
- dashboardCards
-} from '@/data/dashboardData'
-
-import {
-  transactions
-} from '@/data/dashboardData'
-
-import {
-
-expensesOverviewData,
-
-categoryExpenseData
-
-} from '@/data/dashboardData'
+import RecentTransactions from '@/components/dashboard/transactions/RecentTransactions.vue'
 
 </script>
+
+
+
+<template>
+
+<div class="dashboard">
+
+
+<h1>
+Dashboard
+</h1>
+
+
+
+<div class="cards-grid">
+
+
+<BalanceCard 
+:data="dashboardCards[0]"
+/>
+
+
+<IncomeCard
+:data="dashboardCards[1]"
+/>
+
+
+<ExpenseCard
+:data="dashboardCards[2]"
+/>
+
+
+<SavingsCard
+:data="dashboardCards[3]"
+/>
+
+
+</div>
+
+
+
+
+
+<div class="charts-grid">
+
+
+<div class="chart-box">
+
+
+<h2>
+Expenses Overview
+</h2>
+
+
+<ExpenseOverviewChart
+:data="expenseOverviewData"
+/>
+
+
+</div>
+
+
+
+<div class="chart-box">
+
+
+<h2>
+Expenses by Category
+</h2>
+
+
+<CategoryExpenseChart
+:data="categoryExpenseData"
+/>
+
+
+</div>
+
+
+</div>
+
+
+
+
+<div class="transactions-box">
+
+
+<RecentTransactions
+:transactions="transactions"
+/>
+
+
+</div>
+
+
+
+</div>
+
+</template>
+
+
 
 
 
@@ -105,25 +136,30 @@ width:100%;
 
 
 
-h1 {
+.dashboard h1 {
 
-font-size:32px;
+font-size:36px;
 
-margin-bottom:30px;
+margin-bottom:35px;
+
+color:#111827;
 
 }
 
 
 
 
-.cards {
+
+.cards-grid {
 
 
 display:grid;
 
-grid-template-columns:repeat(4,1fr);
+grid-template-columns:repeat(4,minmax(0,1fr));
 
-gap:20px;
+gap:24px;
+
+margin-bottom:35px;
 
 
 }
@@ -131,102 +167,79 @@ gap:20px;
 
 
 
-
-.charts {
+.charts-grid {
 
 
 display:grid;
 
-grid-template-columns:1fr 1fr;
+grid-template-columns:repeat(2,1fr);
 
-gap:20px;
+gap:24px;
 
-margin-top:30px;
+margin-bottom:35px;
 
 
 }
 
 
 
-.chart-box {
+.chart-box,
+.transactions-box {
 
 
 background:white;
 
-height:300px;
-
-border-radius:16px;
+border-radius:20px;
 
 padding:25px;
 
-
-box-shadow:0 4px 20px rgba(0,0,0,0.05);
-
-
-}
-
-
-
-
-.transactions {
-
-
-background:white;
-
-margin-top:30px;
-
-padding:25px;
-
-border-radius:16px;
-
-
-box-shadow:0 4px 20px rgba(0,0,0,0.05);
+box-shadow:
+0 10px 25px rgba(0,0,0,0.05);
 
 
 }
 
 
 
-table {
 
-width:100%;
-
-border-collapse:collapse;
-
-margin-top:20px;
-
-}
+.chart-box h2 {
 
 
+margin-bottom:20px;
 
-th, td {
-
-
-text-align:left;
-
-padding:15px;
-
-border-bottom:1px solid #e5e7eb;
+font-size:22px;
 
 
 }
 
 
 
-.expense {
+@media(max-width:1200px){
 
-color:#ef4444;
+
+.cards-grid{
+
+grid-template-columns:repeat(2,1fr);
+
+}
+
 
 }
 
 
 
-.income {
+@media(max-width:800px){
 
-color:#22c55e;
+
+.cards-grid,
+.charts-grid{
+
+grid-template-columns:1fr;
 
 }
 
+
+}
 
 
 </style>
