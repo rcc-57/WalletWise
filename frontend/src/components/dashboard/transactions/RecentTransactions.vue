@@ -9,100 +9,90 @@ defineProps({
 
 })
 
-
 </script>
 
 
 <template>
 
-<div class="transactions">
+<div class="transactions-card">
 
 
-<div class="header">
+  <div class="header">
 
-<h2>
-Recent Transactions
-</h2>
-
-
-<a>
-View all
-</a>
+    <h2>
+      Recent Transactions
+    </h2>
 
 
-</div>
+    <button>
+      View all
+    </button>
 
-
-
-<table>
-
-
-<thead>
-
-<tr>
-
-<th>
-Date
-</th>
-
-<th>
-Description
-</th>
-
-<th>
-Category
-</th>
-
-<th>
-Amount
-</th>
-
-</tr>
-
-</thead>
+  </div>
 
 
 
-<tbody>
+  <table>
 
 
-<tr
-v-for="item in transactions"
-:key="item.date + item.description"
->
+    <thead>
+
+      <tr>
+
+        <th>Date</th>
+
+        <th>Description</th>
+
+        <th>Category</th>
+
+        <th>Amount</th>
+
+      </tr>
+
+    </thead>
 
 
-<td>
-{{ item.date }}
-</td>
+
+    <tbody>
 
 
-<td>
-{{ item.description }}
-</td>
+      <tr
+      v-for="item in transactions"
+      :key="item.id"
+      >
 
 
-<td
-:class="item.type"
->
-{{ item.category }}
-</td>
+        <td>
+          {{ item.date }}
+        </td>
 
 
-<td
-:class="item.type"
->
-{{ item.amount }}
-</td>
+        <td>
+          {{ item.description }}
+        </td>
 
 
-</tr>
+        <td
+        :class="item.type"
+        >
+          {{ item.category }}
+        </td>
 
 
-</tbody>
+        <td
+        :class="item.type"
+        >
+          {{ item.amount }}
+        </td>
 
 
-</table>
+      </tr>
+
+
+    </tbody>
+
+
+  </table>
 
 
 </div>
@@ -114,7 +104,8 @@ v-for="item in transactions"
 
 <style scoped>
 
-.transactions{
+
+.transactions-card{
 
 background:white;
 
@@ -122,7 +113,13 @@ border-radius:20px;
 
 padding:30px;
 
+box-shadow:
+0 10px 30px rgba(0,0,0,0.05);
+
+margin-top:30px;
+
 }
+
 
 
 .header{
@@ -138,17 +135,26 @@ margin-bottom:25px;
 }
 
 
+
 .header h2{
 
-font-size:26px;
+font-size:24px;
+
+font-weight:700;
 
 }
 
 
 
-.header a{
+button{
+
+border:none;
+
+background:none;
 
 color:#2563eb;
+
+font-weight:600;
 
 cursor:pointer;
 
@@ -166,11 +172,7 @@ border-collapse:collapse;
 
 
 
-th{
-
-text-align:left;
-
-padding:15px;
+thead{
 
 color:#64748b;
 
@@ -178,11 +180,25 @@ color:#64748b;
 
 
 
+th{
+
+text-align:left;
+
+padding:15px 10px;
+
+font-size:14px;
+
+}
+
+
+
 td{
 
-padding:15px;
+padding:18px 10px;
 
-border-top:1px solid #eee;
+border-top:1px solid #e5e7eb;
+
+font-size:15px;
 
 }
 
@@ -190,7 +206,7 @@ border-top:1px solid #eee;
 
 .income{
 
-color:#22c55e;
+color:#16a34a;
 
 }
 
@@ -201,6 +217,7 @@ color:#22c55e;
 color:#ef4444;
 
 }
+
 
 
 </style>

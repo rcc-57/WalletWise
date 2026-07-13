@@ -91,49 +91,55 @@ values:[
 }
 
 
-
-
-
-
 export const transactions = [
 
 {
+id:1,
 date:"Jul 13, 2026",
 description:"Grocery Shopping",
 category:"Food",
-amount:"-$75.50"
+amount:"-$75.50",
+type:"expense"
 },
 
 
 {
+id:2,
 date:"Jul 12, 2026",
 description:"Salary",
 category:"Income",
-amount:"+$2500"
+amount:"+$2500",
+type:"income"
 },
 
 
 {
+id:3,
 date:"Jul 11, 2026",
 description:"Uber Ride",
 category:"Transport",
-amount:"-$12.30"
+amount:"-$12.30",
+type:"expense"
 },
 
 
 {
+id:4,
 date:"Jul 10, 2026",
 description:"Netflix Subscription",
 category:"Entertainment",
-amount:"-$15.99"
+amount:"-$15.99",
+type:"expense"
 },
 
 
 {
+id:5,
 date:"Jul 09, 2026",
 description:"Coffee",
 category:"Food",
-amount:"-$4.50"
+amount:"-$4.50",
+type:"expense"
 }
 
 ]
