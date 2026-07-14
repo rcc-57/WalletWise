@@ -78,20 +78,13 @@ watch(showEditModal, (value) => {
     <div class="page-header">
       <div>
         <h1>Expenses</h1>
-        <p>Manage all your expense records</p>
+        <p>Track and manage every outgoing payment</p>
       </div>
     </div>
 
-    <ExpenseFilters
-      @filter-change="onFilterChange"
-      @add-expense="showAddModal = true"
-    />
+    <ExpenseFilters @filter-change="onFilterChange" @add-expense="showAddModal = true" />
 
-    <ExpenseTable
-      :expenses="filteredExpenses"
-      @edit="onEditExpense"
-      @delete="onDeleteExpense"
-    />
+    <ExpenseTable :expenses="filteredExpenses" @edit="onEditExpense" @delete="onDeleteExpense" />
 
     <AddExpenseModal v-model="showAddModal" />
     <EditExpenseModal v-model="showEditModal" />
@@ -102,21 +95,24 @@ watch(showEditModal, (value) => {
 .expenses-page {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
+
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
+
 .page-header h1 {
-  font-size: 34px;
+  font-size: 32px;
   font-weight: 700;
   color: #111827;
   margin-bottom: 6px;
 }
+
 .page-header p {
-  font-size: 15px;
-  color: #6b7280;
+  font-size: 14px;
+  color: #64748b;
 }
 </style>

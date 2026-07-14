@@ -78,20 +78,13 @@ watch(showEditModal, (value) => {
     <div class="page-header">
       <div>
         <h1>Income</h1>
-        <p>Manage all your income records</p>
+        <p>Track recurring and one-off earnings clearly</p>
       </div>
     </div>
 
-    <IncomeFilters
-      @filter-change="onFilterChange"
-      @add-income="showAddModal = true"
-    />
+    <IncomeFilters @filter-change="onFilterChange" @add-income="showAddModal = true" />
 
-    <IncomeTable
-      :income="filteredIncome"
-      @edit="onEditIncome"
-      @delete="onDeleteIncome"
-    />
+    <IncomeTable :income="filteredIncome" @edit="onEditIncome" @delete="onDeleteIncome" />
 
     <AddIncomeModal v-model="showAddModal" />
     <EditIncomeModal v-model="showEditModal" />
@@ -102,7 +95,7 @@ watch(showEditModal, (value) => {
 .income-page {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .page-header {
@@ -112,14 +105,14 @@ watch(showEditModal, (value) => {
 }
 
 .page-header h1 {
-  font-size: 34px;
+  font-size: 32px;
   font-weight: 700;
   color: #111827;
   margin-bottom: 6px;
 }
 
 .page-header p {
-  font-size: 15px;
-  color: #6b7280;
+  font-size: 14px;
+  color: #64748b;
 }
 </style>
