@@ -5,7 +5,7 @@ import MainLayout from '../layouts/MainLayout.vue'
 import LoginPage from '../views/auth/LoginPage.vue'
 import RegisterPage from '../views/auth/RegisterPage.vue'
 import DashboardPage from '../views/dashboard/DashboardPage.vue'
-import ExpensesPage from '../views/ExpensesPage.vue'
+import ExpensesPage from '../views/expenses/ExpensesPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -17,7 +17,6 @@ const router = createRouter({
       redirect: '/login',
     },
 
-
     {
       path: '/login',
       name: 'Login',
@@ -25,9 +24,9 @@ const router = createRouter({
     },
 
     {
-      path:'/register',
-      name:'Register',
-      component:RegisterPage
+      path: '/register',
+      name: 'Register',
+      component: RegisterPage,
     },
 
     {
@@ -42,7 +41,6 @@ const router = createRouter({
           component: DashboardPage,
         },
 
-
         {
           path: 'expenses',
           name: 'Expenses',
@@ -50,9 +48,11 @@ const router = createRouter({
         },
 
       ],
+
     },
 
   ],
+
 })
 
 export default router
