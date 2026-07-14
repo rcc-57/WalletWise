@@ -1,10 +1,8 @@
 <script setup>
 import { reactive } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
-const router = useRouter()
 
 const form = reactive({
   username: '',
@@ -53,6 +51,10 @@ async function submitLogin() {
             </label>
             <router-link to="/register">Create account</router-link>
           </div>
+
+          <p class="helper-text">
+            Demo access: <strong>demo_walletwise</strong> / <strong>Demo123!</strong>
+          </p>
 
           <el-button type="primary" class="submit-button" :loading="authStore.loading" @click="submitLogin">
             Login
@@ -157,6 +159,11 @@ async function submitLogin() {
 
 .submit-button {
   width: 100%;
+}
+
+.helper-text {
+  margin: 8px 0 16px;
+  color: #64748b;
 }
 
 .error-text {

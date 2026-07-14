@@ -17,6 +17,8 @@ function logout() {
       <router-link to="/expenses">💳 Expenses</router-link>
       <router-link to="/income">💰 Income</router-link>
       <router-link to="/analytics">📊 Analytics</router-link>
+      <router-link to="/profile">👤 Profile</router-link>
+      <router-link to="/settings">⚙ Settings</router-link>
     </nav>
 
     <button class="logout" @click="logout">🚪 Logout</button>
