@@ -1,109 +1,122 @@
 <script setup>
-
+import { ref, computed, watch } from 'vue'
+import ExpenseFilters from '@/components/expenses/ExpenseFilters.vue'
 import ExpenseTable from '@/components/expenses/ExpenseTable.vue'
+import AddExpenseModal from '@/components/expenses/AddExpenseModal.vue'
+import EditExpenseModal from '@/components/expenses/EditExpenseModal.vue'
+import { useExpensesStore } from '@/stores/expenses'
 
-import { expenses } from '@/data/expensesData'
+const expensesStore = useExpensesStore()
+const showAddModal = ref(false)
+const showEditModal = ref(false)
 
+const filters = ref({
+  search: '',
+  category: 'All',
+  sort: 'newest'
+})
+
+const filteredExpenses = computed(() => {
+  let list = [...expensesStore.expenses]
+
+  if (filters.value.search) {
+    const term = filters.value.search.toLowerCase()
+    list = list.filter(
+      (item) =>
+        item.category.toLowerCase().includes(term) ||
+        item.remark.toLowerCase().includes(term) ||
+        item.date.toLowerCase().includes(term)
+    )
+  }
+
+  if (filters.value.category && filters.value.category !== 'All') {
+    list = list.filter((item) => item.category === filters.value.category)
+  }
+
+  list.sort((a, b) => {
+    if (filters.value.sort === 'newest') {
+      return new Date(b.date) - new Date(a.date)
+    }
+    if (filters.value.sort === 'oldest') {
+      return new Date(a.date) - new Date(b.date)
+    }
+    if (filters.value.sort === 'highest') {
+      return b.amount - a.amount
+    }
+    if (filters.value.sort === 'lowest') {
+      return a.amount - b.amount
+    }
+    return 0
+  })
+
+  return list
+})
+
+function onFilterChange(payload) {
+  filters.value = payload
+}
+
+function onEditExpense(expense) {
+  expensesStore.selectExpense(expense)
+  showEditModal.value = true
+}
+
+function onDeleteExpense(id) {
+  expensesStore.deleteExpense(id)
+}
+
+watch(showEditModal, (value) => {
+  if (!value) {
+    expensesStore.selectedExpense = null
+    expensesStore.isEditDialogOpen = false
+  }
+})
 </script>
 
 <template>
-
-<div class="expenses-page">
-
-  <div class="page-header">
-
-    <div>
-
-      <h1>Expenses</h1>
-
-      <p>Manage all your expense records</p>
-
+  <div class="expenses-page">
+    <div class="page-header">
+      <div>
+        <h1>Expenses</h1>
+        <p>Manage all your expense records</p>
+      </div>
     </div>
 
-    <button class="add-button">
+    <ExpenseFilters
+      @filter-change="onFilterChange"
+      @add-expense="showAddModal = true"
+    />
 
-      + Add Expense
+    <ExpenseTable
+      :expenses="filteredExpenses"
+      @edit="onEditExpense"
+      @delete="onDeleteExpense"
+    />
 
-    </button>
-
+    <AddExpenseModal v-model="showAddModal" />
+    <EditExpenseModal v-model="showEditModal" />
   </div>
-
-  <ExpenseTable
-    :expenses="expenses"
-  />
-
-</div>
-
 </template>
 
 <style scoped>
-
-.expenses-page{
-
-display:flex;
-
-flex-direction:column;
-
-gap:24px;
-
+.expenses-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
-
-.page-header{
-
-display:flex;
-
-justify-content:space-between;
-
-align-items:center;
-
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
-
-.page-header h1{
-
-font-size:34px;
-
-font-weight:700;
-
-color:#111827;
-
-margin-bottom:6px;
-
+.page-header h1 {
+  font-size: 34px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 6px;
 }
-
-.page-header p{
-
-color:#6b7280;
-
-font-size:15px;
-
+.page-header p {
+  font-size: 15px;
+  color: #6b7280;
 }
-
-.add-button{
-
-background:#2563eb;
-
-color:white;
-
-border:none;
-
-padding:12px 20px;
-
-border-radius:10px;
-
-font-size:15px;
-
-font-weight:600;
-
-cursor:pointer;
-
-transition:.2s;
-
-}
-
-.add-button:hover{
-
-background:#1d4ed8;
-
-}
-
 </style>

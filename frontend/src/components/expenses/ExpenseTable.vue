@@ -1,100 +1,61 @@
 <script setup>
-
-import ExpenseRow from './ExpenseRow.vue'
-
-defineProps({
-
+const props = defineProps({
   expenses: {
     type: Array,
     required: true
   }
-
 })
 
+const emit = defineEmits(['edit', 'delete'])
+
+function editExpense(expense) {
+  emit('edit', expense)
+}
+
+function deleteExpense(id) {
+  emit('delete', id)
+}
 </script>
 
 <template>
-
-<div class="table-container">
-
-  <table>
-
-    <thead>
-
-      <tr>
-
-        <th>Date</th>
-
-        <th>Category</th>
-
-        <th>Amount</th>
-
-        <th>Remark</th>
-
-        <th>Actions</th>
-
-      </tr>
-
-    </thead>
-
-    <tbody>
-
-      <ExpenseRow
-        v-for="expense in expenses"
-        :key="expense.id"
-        :expense="expense"
-      />
-
-    </tbody>
-
-  </table>
-
-</div>
-
+  <el-table
+    :data="props.expenses"
+    stripe
+    border
+    style="width: 100%"
+  >
+    <el-table-column prop="date" label="Date" width="140" />
+    <el-table-column prop="category" label="Category" width="160" />
+    <el-table-column prop="amount" label="Amount" width="140">
+      <template #default="scope">
+        <span class="amount">${{ scope.row.amount.toFixed(2) }}</span>
+      </template>
+    </el-table-column>
+    <el-table-column prop="remark" label="Remark" />
+    <el-table-column label="Actions" width="190">
+      <template #default="scope">
+        <el-button
+          type="primary"
+          size="small"
+          @click="editExpense(scope.row)"
+        >
+          Edit
+        </el-button>
+        <el-button
+          type="danger"
+          size="small"
+          @click="deleteExpense(scope.row.id)"
+        >
+          Delete
+        </el-button>
+      </template>
+    </el-table-column>
+  </el-table>
 </template>
 
 <style scoped>
-
-.table-container{
-
-background:white;
-
-border-radius:20px;
-
-padding:24px;
-
-box-shadow:0 10px 25px rgba(0,0,0,.05);
-
-overflow-x:auto;
-
+.amount {
+  font-weight: 700;
+  color: #ef4444;
 }
-
-table{
-
-width:100%;
-
-border-collapse:collapse;
-
-}
-
-thead{
-
-background:#f8fafc;
-
-}
-
-th{
-
-padding:16px;
-
-text-align:left;
-
-font-size:14px;
-
-font-weight:600;
-
-color:#64748b;
-
-}
-
 </style>
