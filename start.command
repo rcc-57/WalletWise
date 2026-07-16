@@ -9,11 +9,12 @@ DATABASE_DIR="$ROOT_DIR/database"
 LOG_DIR="$ROOT_DIR/logs"
 
 CONFIG_FILE="$BACKEND_DIR/src/main/resources/application-local.properties"
-EXAMPLE_CONFIG="$BACKEND_DIR/src/main/resources/application-local.example.properties"
 INIT_SQL="$DATABASE_DIR/init.sql"
 
 BACKEND_PID=""
 FRONTEND_PID=""
+DELETE_LOCAL_CONFIG="false"
+CLEANUP_COMPLETED="false"
 
 mkdir -p "$LOG_DIR"
 
@@ -23,29 +24,6 @@ print_step() {
   echo "$1"
   echo "============================================================"
 }
-
-stop_processes() {
-  echo
-  echo "Stopping WalletWise..."
-
-  if [ -n "$FRONTEND_PID" ] && kill -0 "$FRONTEND_PID" 2>/dev/null; then
-    kill "$FRONTEND_PID" 2>/dev/null || true
-  fi
-
-  if [ -n "$BACKEND_PID" ] && kill -0 "$BACKEND_PID" 2>/dev/null; then
-    kill "$BACKEND_PID" 2>/dev/null || true
-  fi
-}
-
-finish_with_error() {
-  echo
-  echo "ERROR: $1"
-  echo
-  read -r -p "Press Enter to close..."
-  exit 1
-}
-
-trap stop_processes EXIT INT TERM
 
 get_property() {
   local property_name="$1"
@@ -58,6 +36,107 @@ get_property() {
       exit
     }
   ' "$file_name"
+}
+
+choose_shutdown_mode() {
+  echo
+  echo "============================================================"
+  echo "Choose how to stop WalletWise"
+  echo "============================================================"
+
+  if [ ! -f "$CONFIG_FILE" ]; then
+    echo "No local MySQL configuration is currently stored."
+    read -r -p "Press Enter to close..."
+    return
+  fi
+
+  echo
+  echo "1 — Stop and keep the local MySQL configuration"
+  echo "    The password will not be requested next time."
+  echo
+  echo "2 — Stop and delete the local MySQL configuration"
+  echo "    The password will be requested next time."
+  echo "    Generated backend build files will also be removed."
+  echo
+
+  while true; do
+    read -r -p "Enter 1 or 2: " shutdown_choice
+
+    case "$shutdown_choice" in
+      1)
+        DELETE_LOCAL_CONFIG="false"
+        echo
+        echo "The local MySQL configuration will be preserved."
+        break
+        ;;
+      2)
+        DELETE_LOCAL_CONFIG="true"
+        echo
+        echo "The local MySQL configuration will be deleted."
+        break
+        ;;
+      *)
+        echo "Please enter 1 or 2."
+        ;;
+    esac
+  done
+}
+
+cleanup() {
+  if [ "$CLEANUP_COMPLETED" = "true" ]; then
+    return
+  fi
+
+  CLEANUP_COMPLETED="true"
+
+  echo
+  echo "Stopping WalletWise..."
+
+  if [ -n "$FRONTEND_PID" ] &&
+     kill -0 "$FRONTEND_PID" 2>/dev/null; then
+    kill "$FRONTEND_PID" 2>/dev/null || true
+    wait "$FRONTEND_PID" 2>/dev/null || true
+  fi
+
+  if [ -n "$BACKEND_PID" ] &&
+     kill -0 "$BACKEND_PID" 2>/dev/null; then
+    kill "$BACKEND_PID" 2>/dev/null || true
+    wait "$BACKEND_PID" 2>/dev/null || true
+  fi
+
+  if [ "$DELETE_LOCAL_CONFIG" = "true" ]; then
+    if [ -f "$CONFIG_FILE" ]; then
+      rm -f -- "$CONFIG_FILE"
+      echo "Deleted local configuration:"
+      echo "$CONFIG_FILE"
+    fi
+
+    TARGET_DIRECTORY="$BACKEND_DIR/target"
+
+    if [ -d "$TARGET_DIRECTORY" ] &&
+       [ "$TARGET_DIRECTORY" = "$ROOT_DIR/backend/target" ]; then
+      rm -rf -- "$TARGET_DIRECTORY"
+      echo "Deleted generated backend build files:"
+      echo "$TARGET_DIRECTORY"
+    fi
+
+    echo
+    echo "The database was not deleted."
+    echo "The MySQL password will be requested at the next launch."
+  else
+    echo "The local MySQL configuration was preserved."
+  fi
+
+  echo
+  echo "WalletWise stopped."
+}
+
+finish_with_error() {
+  echo
+  echo "ERROR: $1"
+
+  choose_shutdown_mode
+  exit 1
 }
 
 create_local_config() {
@@ -99,10 +178,13 @@ EOF
   echo "$CONFIG_FILE"
 }
 
+trap cleanup EXIT
+trap 'exit 130' INT TERM HUP
+
 if [ ! -d "$BACKEND_DIR" ] ||
    [ ! -d "$FRONTEND_DIR" ] ||
    [ ! -f "$INIT_SQL" ]; then
-  finish_with_error "Run this file from the WalletWise project directory."
+  finish_with_error "Required WalletWise directories were not found."
 fi
 
 if [ ! -f "$CONFIG_FILE" ]; then
@@ -113,13 +195,15 @@ DB_USERNAME="$(get_property "spring.datasource.username" "$CONFIG_FILE")"
 DB_PASSWORD="$(get_property "spring.datasource.password" "$CONFIG_FILE")"
 
 if [ -z "$DB_USERNAME" ]; then
-  finish_with_error "spring.datasource.username is missing in application-local.properties."
+  finish_with_error \
+    "spring.datasource.username is missing in application-local.properties."
 fi
 
 if [ -z "$DB_PASSWORD" ] ||
    [ "$DB_PASSWORD" = "YOUR_MYSQL_PASSWORD" ] ||
    [ "$DB_PASSWORD" = "YOUR_PASSWORD" ]; then
-  finish_with_error "Set a real MySQL password in application-local.properties."
+  finish_with_error \
+    "Set a real MySQL password in application-local.properties."
 fi
 
 print_step "Checking required software"
@@ -164,7 +248,8 @@ if ! MYSQL_PWD="$DB_PASSWORD" "$MYSQL_BIN" \
   --batch \
   --skip-column-names \
   -e "SELECT 1;" >/dev/null 2>&1; then
-  finish_with_error "Cannot connect to MySQL. Start MySQL and check the local password."
+  finish_with_error \
+    "Cannot connect to MySQL. Start MySQL and check the password."
 fi
 
 DATABASE_EXISTS="$(
@@ -174,7 +259,11 @@ DATABASE_EXISTS="$(
     --user="$DB_USERNAME" \
     --batch \
     --skip-column-names \
-    -e "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = 'online_bookkeeping';"
+    -e "
+      SELECT SCHEMA_NAME
+      FROM INFORMATION_SCHEMA.SCHEMATA
+      WHERE SCHEMA_NAME = 'online_bookkeeping';
+    "
 )"
 
 if [ "$DATABASE_EXISTS" != "online_bookkeeping" ]; then
@@ -208,7 +297,8 @@ SCHEMA_CHECK="$(
 )"
 
 if [ "$SCHEMA_CHECK" != "2" ]; then
-  finish_with_error "The database has an old structure. Recreate it with the current database/init.sql."
+  finish_with_error \
+    "The database has an old structure. Recreate it using database/init.sql."
 fi
 
 if command -v lsof >/dev/null 2>&1; then
@@ -249,17 +339,18 @@ fi
 print_step "Starting backend"
 
 cd "$BACKEND_DIR"
+
 java -jar "$BACKEND_JAR" \
   > "$LOG_DIR/backend.log" \
   2>&1 &
 
 BACKEND_PID=$!
 
-BACKEND_READY=false
+BACKEND_READY="false"
 
 for _ in $(seq 1 60); do
   if curl -fsS "http://localhost:8080/api/health" >/dev/null 2>&1; then
-    BACKEND_READY=true
+    BACKEND_READY="true"
     break
   fi
 
@@ -283,17 +374,18 @@ echo "Backend is available at http://localhost:8080"
 print_step "Starting frontend"
 
 cd "$FRONTEND_DIR"
+
 npm run preview -- --host localhost --port 5173 \
   > "$LOG_DIR/frontend.log" \
   2>&1 &
 
 FRONTEND_PID=$!
 
-FRONTEND_READY=false
+FRONTEND_READY="false"
 
 for _ in $(seq 1 30); do
   if curl -fsS "http://localhost:5173" >/dev/null 2>&1; then
-    FRONTEND_READY=true
+    FRONTEND_READY="true"
     break
   fi
 
@@ -316,9 +408,6 @@ echo
 echo "WalletWise is ready:"
 echo "http://localhost:5173"
 echo
-echo "Keep this terminal window open while using the application."
+echo "Keep this Terminal window open while using the application."
 
-open "http://localhost:5173"
-
-echo
-read -r -p "Press Enter to stop WalletWise..."
+choose_shutdown_mode

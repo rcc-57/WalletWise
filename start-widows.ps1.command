@@ -6,11 +6,15 @@ $FrontendDirectory = Join-Path $RootDirectory "frontend"
 $DatabaseDirectory = Join-Path $RootDirectory "database"
 $LogDirectory = Join-Path $RootDirectory "logs"
 
-$ConfigFile = Join-Path $BackendDirectory "src\main\resources\application-local.properties"
+$ConfigFile = Join-Path `
+    $BackendDirectory `
+    "src\main\resources\application-local.properties"
+
 $InitSql = Join-Path $DatabaseDirectory "init.sql"
 
 $BackendProcess = $null
 $FrontendProcess = $null
+$DeleteLocalConfiguration = $false
 
 function Write-Step {
     param([string]$Message)
@@ -40,7 +44,8 @@ function Get-PropertyValue {
 
 function New-Base64Secret {
     $Bytes = New-Object byte[] 32
-    $Generator = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    $Generator = `
+        [System.Security.Cryptography.RandomNumberGenerator]::Create()
 
     try {
         $Generator.GetBytes($Bytes)
@@ -66,10 +71,17 @@ function New-LocalConfiguration {
     }
 
     $SecurePassword = Read-Host "MySQL password" -AsSecureString
-    $Pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword)
+
+    $Pointer = `
+        [Runtime.InteropServices.Marshal]::SecureStringToBSTR(
+            $SecurePassword
+        )
 
     try {
-        $DatabasePassword = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($Pointer)
+        $DatabasePassword = `
+            [Runtime.InteropServices.Marshal]::PtrToStringBSTR(
+                $Pointer
+            )
     }
     finally {
         [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($Pointer)
@@ -91,7 +103,12 @@ function New-LocalConfiguration {
     )
 
     $Utf8WithoutBom = New-Object System.Text.UTF8Encoding($false)
-    [System.IO.File]::WriteAllLines($ConfigFile, $Lines, $Utf8WithoutBom)
+
+    [System.IO.File]::WriteAllLines(
+        $ConfigFile,
+        $Lines,
+        $Utf8WithoutBom
+    )
 
     Write-Host ""
     Write-Host "Local configuration created:"
@@ -168,7 +185,12 @@ function Stop-ProcessTree {
 
     try {
         if (!$Process.HasExited) {
-            & taskkill.exe /PID $Process.Id /T /F 2>$null | Out-Null
+            & taskkill.exe `
+                /PID $Process.Id `
+                /T `
+                /F `
+                2>$null |
+                Out-Null
         }
     }
     catch {
@@ -176,13 +198,101 @@ function Stop-ProcessTree {
     }
 }
 
-try {
-    New-Item -ItemType Directory -Force -Path $LogDirectory | Out-Null
+function Select-ShutdownMode {
+    if (!(Test-Path -LiteralPath $ConfigFile)) {
+        Write-Host ""
+        Write-Host "No local MySQL configuration is currently stored."
+        Read-Host "Press Enter to close"
+        return
+    }
 
-    if (!(Test-Path -LiteralPath $BackendDirectory) -or
+    Write-Host ""
+    Write-Host "============================================================"
+    Write-Host "Choose how to stop WalletWise"
+    Write-Host "============================================================"
+    Write-Host ""
+    Write-Host "1 - Stop and keep the local MySQL configuration"
+    Write-Host "    The password will not be requested next time."
+    Write-Host ""
+    Write-Host "2 - Stop and delete the local MySQL configuration"
+    Write-Host "    The password will be requested next time."
+    Write-Host "    Generated backend build files will also be removed."
+    Write-Host ""
+
+    while ($true) {
+        $Choice = Read-Host "Enter 1 or 2"
+
+        switch ($Choice) {
+            "1" {
+                $script:DeleteLocalConfiguration = $false
+
+                Write-Host ""
+                Write-Host "The local MySQL configuration will be preserved."
+                return
+            }
+
+            "2" {
+                $script:DeleteLocalConfiguration = $true
+
+                Write-Host ""
+                Write-Host "The local MySQL configuration will be deleted."
+                return
+            }
+
+            default {
+                Write-Host "Please enter 1 or 2."
+            }
+        }
+    }
+}
+
+function Remove-PrivateBuildData {
+    if (!$script:DeleteLocalConfiguration) {
+        Write-Host "The local MySQL configuration was preserved."
+        return
+    }
+
+    if (Test-Path -LiteralPath $ConfigFile) {
+        Remove-Item -LiteralPath $ConfigFile -Force
+
+        Write-Host "Deleted local configuration:"
+        Write-Host $ConfigFile
+    }
+
+    $TargetDirectory = Join-Path $BackendDirectory "target"
+    $ExpectedTargetDirectory = Join-Path $RootDirectory "backend\target"
+
+    if (
+        (Test-Path -LiteralPath $TargetDirectory) -and
+        ($TargetDirectory -eq $ExpectedTargetDirectory)
+    ) {
+        Remove-Item `
+            -LiteralPath $TargetDirectory `
+            -Recurse `
+            -Force
+
+        Write-Host "Deleted generated backend build files:"
+        Write-Host $TargetDirectory
+    }
+
+    Write-Host ""
+    Write-Host "The database was not deleted."
+    Write-Host "The MySQL password will be requested next time."
+}
+
+try {
+    New-Item `
+        -ItemType Directory `
+        -Force `
+        -Path $LogDirectory |
+        Out-Null
+
+    if (
+        !(Test-Path -LiteralPath $BackendDirectory) -or
         !(Test-Path -LiteralPath $FrontendDirectory) -or
-        !(Test-Path -LiteralPath $InitSql)) {
-        throw "Required project directories were not found."
+        !(Test-Path -LiteralPath $InitSql)
+    ) {
+        throw "Required WalletWise directories were not found."
     }
 
     if (!(Test-Path -LiteralPath $ConfigFile)) {
@@ -198,26 +308,42 @@ try {
         -Name "spring.datasource.password"
 
     if ([string]::IsNullOrWhiteSpace($DatabaseUsername)) {
-        throw "spring.datasource.username is missing in application-local.properties."
+        throw `
+            "spring.datasource.username is missing in application-local.properties."
     }
 
-    if ([string]::IsNullOrEmpty($DatabasePassword) -or
+    if (
+        [string]::IsNullOrEmpty($DatabasePassword) -or
         $DatabasePassword -eq "YOUR_MYSQL_PASSWORD" -or
-        $DatabasePassword -eq "YOUR_PASSWORD") {
-        throw "Set a real MySQL password in application-local.properties."
+        $DatabasePassword -eq "YOUR_PASSWORD"
+    ) {
+        throw `
+            "Set a real MySQL password in application-local.properties."
     }
 
     Write-Step "Checking required software"
 
-    if ($null -eq (Get-Command "java.exe" -ErrorAction SilentlyContinue)) {
+    if (
+        $null -eq (
+            Get-Command "java.exe" -ErrorAction SilentlyContinue
+        )
+    ) {
         throw "Java 17 is not installed or is not available in PATH."
     }
 
-    if ($null -eq (Get-Command "node.exe" -ErrorAction SilentlyContinue)) {
+    if (
+        $null -eq (
+            Get-Command "node.exe" -ErrorAction SilentlyContinue
+        )
+    ) {
         throw "Node.js is not installed or is not available in PATH."
     }
 
-    if ($null -eq (Get-Command "npm.cmd" -ErrorAction SilentlyContinue)) {
+    if (
+        $null -eq (
+            Get-Command "npm.cmd" -ErrorAction SilentlyContinue
+        )
+    ) {
         throw "npm is not installed or is not available in PATH."
     }
 
@@ -249,7 +375,8 @@ try {
         Out-Null
 
     if ($LASTEXITCODE -ne 0) {
-        throw "Cannot connect to MySQL. Start MySQL and check the local password."
+        throw `
+            "Cannot connect to MySQL. Start MySQL and check the password."
     }
 
     $DatabaseExists = & $MySqlExecutable `
@@ -261,7 +388,12 @@ try {
         "-e" `
         "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = 'online_bookkeeping';"
 
-    if ($DatabaseExists -notcontains "online_bookkeeping") {
+    $DatabaseExistsText = (
+        $DatabaseExists |
+        Out-String
+    ).Trim()
+
+    if ($DatabaseExistsText -ne "online_bookkeeping") {
         Write-Host "Database not found. Running database\init.sql..."
 
         $InitProcess = Start-Process `
@@ -296,8 +428,14 @@ try {
         "-e" `
         "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = 'online_bookkeeping' AND TABLE_NAME = 'users' AND COLUMN_NAME IN ('email', 'currency');"
 
-    if (($SchemaCheck | Select-Object -First 1).Trim() -ne "2") {
-        throw "The database has an old structure. Recreate it with the current database\init.sql."
+    $SchemaCheckText = (
+        $SchemaCheck |
+        Out-String
+    ).Trim()
+
+    if ($SchemaCheckText -ne "2") {
+        throw `
+            "The database has an old structure. Recreate it using database\init.sql."
     }
 
     $Port8080 = Get-NetTCPConnection `
@@ -358,7 +496,9 @@ try {
         -Path (Join-Path $BackendDirectory "target") `
         -Filter "*.jar" `
         -File |
-        Where-Object { $_.Name -notlike "*.original" } |
+        Where-Object {
+            $_.Name -notlike "*.original"
+        } |
         Select-Object -First 1
 
     if ($null -eq $BackendJar) {
@@ -378,7 +518,11 @@ try {
         -RedirectStandardError $BackendErrorLog `
         -PassThru
 
-    if (!(Wait-ForUrl -Url "http://localhost:8080/api/health" -Attempts 60)) {
+    if (
+        !(Wait-ForUrl `
+            -Url "http://localhost:8080/api/health" `
+            -Attempts 60)
+    ) {
         if (Test-Path -LiteralPath $BackendLog) {
             Get-Content -LiteralPath $BackendLog -Tail 50
         }
@@ -413,7 +557,11 @@ try {
         -RedirectStandardError $FrontendErrorLog `
         -PassThru
 
-    if (!(Wait-ForUrl -Url "http://localhost:5173" -Attempts 30)) {
+    if (
+        !(Wait-ForUrl `
+            -Url "http://localhost:5173" `
+            -Attempts 30)
+    ) {
         if (Test-Path -LiteralPath $FrontendLog) {
             Get-Content -LiteralPath $FrontendLog -Tail 50
         }
@@ -433,19 +581,26 @@ try {
 
     Start-Process "http://localhost:5173"
 
-    Write-Host ""
-    Read-Host "Press Enter to stop WalletWise"
+    Select-ShutdownMode
 }
 catch {
     Write-Host ""
     Write-Host "ERROR: $($_.Exception.Message)" -ForegroundColor Red
-    Write-Host ""
-    Read-Host "Press Enter to close"
+
+    Select-ShutdownMode
     exit 1
 }
 finally {
+    Write-Host ""
+    Write-Host "Stopping WalletWise..."
+
     Stop-ProcessTree -Process $FrontendProcess
     Stop-ProcessTree -Process $BackendProcess
 
+    Remove-PrivateBuildData
+
     $env:MYSQL_PWD = $null
+
+    Write-Host ""
+    Write-Host "WalletWise stopped."
 }

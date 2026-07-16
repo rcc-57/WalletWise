@@ -31,10 +31,26 @@ export const CURRENCY_OPTIONS = [
   },
 ]
 
-// Оставлены дополнительные названия экспортов,
-// чтобы существующие компоненты продолжали работать.
+// Дополнительные экспорты оставлены для совместимости
+// с существующими компонентами.
 export const SUPPORTED_CURRENCIES = CURRENCY_OPTIONS
 export const supportedCurrencies = CURRENCY_OPTIONS
+
+export function getCurrencyLabel(currency) {
+  const selectedCurrency = CURRENCY_OPTIONS.find(
+    (item) => item.code === currency,
+  )
+
+  return selectedCurrency?.label ?? currency ?? ''
+}
+
+export function getCurrencySymbol(currency) {
+  const selectedCurrency = CURRENCY_OPTIONS.find(
+    (item) => item.code === currency,
+  )
+
+  return selectedCurrency?.symbol ?? ''
+}
 
 export function formatMoney(value, currency = 'USD') {
   const numericValue = Number(value)
