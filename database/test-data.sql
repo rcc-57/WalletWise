@@ -3,19 +3,28 @@ USE online_bookkeeping;
 -- Demo account:
 -- Username: demo_walletwise
 -- Password: Demo123!
+-- Currency: USD
 
 INSERT IGNORE INTO users (
     username,
-    password
+    password,
+    email,
+    currency
 )
 VALUES (
     'demo_walletwise',
-    '$2b$10$OwC9S8cZos03CcNQLze6uuZ8B9E966KPvCcwSFMKoerfX0cFJdkva'
+    '$2b$10$OwC9S8cZos03CcNQLze6uuZ8B9E966KPvCcwSFMKoerfX0cFJdkva',
+    NULL,
+    'USD'
 );
 
--- Restore the expected demo password if this script is executed again.
+-- Restore the expected demo password.
+-- Keep an existing email if the user added one.
+-- Set USD only if the demo account does not have a currency yet.
 UPDATE users
-SET password = '$2b$10$OwC9S8cZos03CcNQLze6uuZ8B9E966KPvCcwSFMKoerfX0cFJdkva'
+SET
+    password = '$2b$10$OwC9S8cZos03CcNQLze6uuZ8B9E966KPvCcwSFMKoerfX0cFJdkva',
+    currency = COALESCE(currency, 'USD')
 WHERE username = 'demo_walletwise';
 
 SET @demo_user_id = (
@@ -24,7 +33,8 @@ SET @demo_user_id = (
     WHERE username = 'demo_walletwise'
 );
 
--- Only demo data is recreated. Other users are not affected.
+-- Only demo bills are recreated.
+-- Other users are not affected.
 DELETE FROM bills
 WHERE user_id = @demo_user_id;
 

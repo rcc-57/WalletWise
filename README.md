@@ -1,8 +1,26 @@
 # WalletWise
 
-WalletWise is a personal online bookkeeping web application developed during the Software Production Internship.
+WalletWise is an online personal bookkeeping application built with Spring Boot, Vue 3 and MySQL.
 
-The system allows users to securely manage income and expense records and view monthly financial statistics.
+Users can create an account, record income and expenses, manage their profile and view monthly financial statistics.
+
+## Features
+
+- Registration and login
+- JWT authentication
+- BCrypt password hashing
+- Unique usernames
+- Optional email address
+- User-selected currency
+- Income creation, editing and deletion
+- Expense creation, editing and deletion
+- Transaction filtering
+- Monthly income, expenses and balance calculation
+- Savings rate calculation
+- Daily cash-flow chart
+- Expense category chart
+- Recent transactions
+- Profile data stored in MySQL
 
 ## Technology Stack
 
@@ -14,489 +32,589 @@ The system allows users to securely manage income and expense records and view m
 - JWT
 - MyBatis
 - MySQL 8
-- Maven
+- Maven Wrapper
+- BCrypt
 
 ### Frontend
 
 - Vue 3
+- Vue Router
+- Pinia
 - Element Plus
 - Axios
 - ECharts
-
-## Main Features
-
-- User registration and login
-- BCrypt password hashing
-- JWT authentication
-- User data isolation
-- Create, read, update, and delete bills
-- Income and expense filtering
-- Reverse chronological bill ordering
-- Monthly income, expense, and balance calculation
-- Expense distribution by category
-- REST API validation
-- Structured error responses
-- CORS support for the Vue frontend
+- Vite
 
 ## Project Structure
 
 ```text
 WalletWise/
-├── backend/          Spring Boot backend
-├── frontend/         Vue frontend
-├── database/         Database scripts
-├── documentation/    Project documentation
-├── scripts/          Automated smoke tests
+├── backend/                 Spring Boot backend
+├── database/                Database initialization scripts
+├── documentation/           Project and API documentation
+├── frontend/                Vue frontend
+├── scripts/                 Optional test scripts
+├── start.command            macOS startup script
+├── start-windows.bat        Windows startup launcher
+├── start-windows.ps1        Windows startup script
+├── .gitignore
 └── README.md
 ```
 
-## Requirements
+## Prerequisites
 
-Install the following software:
+Install the following software before starting WalletWise:
 
-- JDK 17
-- MySQL 8.0
 - Git
-- Node.js 20 or newer
+- Java JDK 17
+- MySQL 8
+- Node.js `^22.22.2` or `>=24.15.0`
 - npm
 
-IntelliJ IDEA is recommended for backend development. Visual Studio Code can be used for frontend development.
+MySQL must be running before WalletWise is launched.
 
-## Database Setup
+The MySQL command-line client must also be installed. It is normally installed together with MySQL Server.
 
-Open Terminal in the root directory of the project:
+## Passwords and Local Configuration
 
-```bash
-cd ~/Documents/GitHub/WalletWise
-```
+Real passwords and JWT secrets must never be committed to GitHub.
 
-Create the database and tables:
-
-```bash
-mysql -u root -p < database/init.sql
-```
-
-Add demonstration data:
-
-```bash
-mysql -u root -p < database/test-data.sql
-```
-
-The test-data script creates a demonstration account:
+The repository contains only the safe configuration template:
 
 ```text
-Username: demo_walletwise
-Password: Demo123!
+backend/src/main/resources/application-local.example.properties
 ```
 
-This account is intended only for local testing and project demonstration.
-
-## Backend Configuration
-
-Inside the following directory:
+The real local configuration is stored in:
 
 ```text
-backend/src/main/resources/
+backend/src/main/resources/application-local.properties
 ```
 
-copy:
+This file is excluded from Git using `.gitignore`.
+
+During the first automatic launch, the startup script asks for:
+
+- MySQL username;
+- MySQL password.
+
+The default MySQL username is:
 
 ```text
-application-local.example.properties
+root
 ```
 
-and rename the copy to:
+The script then creates `application-local.properties` and generates a random JWT secret.
 
-```text
-application-local.properties
-```
+Every computer has its own local configuration, MySQL password, JWT secret and database.
 
-Configure the local MySQL connection:
+The MySQL password is not the WalletWise website password. It is the password that was configured for the MySQL `root` user during MySQL installation.
 
-```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/online_bookkeeping?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
-spring.datasource.username=root
-spring.datasource.password=YOUR_MYSQL_PASSWORD
-spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
-```
+## First Launch After Cloning
 
-Generate a JWT secret:
+Clone the project:
 
 ```bash
-openssl rand -base64 32
+git clone YOUR_REPOSITORY_URL
 ```
 
-Add the generated secret to `application-local.properties`:
-
-```properties
-jwt.secret=YOUR_GENERATED_JWT_SECRET
-```
-
-The complete local file should look similar to this:
-
-```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/online_bookkeeping?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
-spring.datasource.username=root
-spring.datasource.password=YOUR_MYSQL_PASSWORD
-spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
-
-jwt.secret=YOUR_GENERATED_JWT_SECRET
-```
-
-The `application-local.properties` file is excluded from Git because it contains local passwords and secrets.
-
-## Running the Backend
-
-Open Terminal and run:
+Open the project directory:
 
 ```bash
-cd ~/Documents/GitHub/WalletWise/backend
-./mvnw spring-boot:run
+cd WalletWise
 ```
 
-Wait until the following message appears:
+Start MySQL.
+
+Then use the startup script for your operating system.
+
+During the first launch:
+
+1. The script asks for the local MySQL username.
+2. The script asks for the local MySQL password.
+3. The script creates the private local configuration.
+4. The script generates a JWT secret.
+5. The script connects to MySQL.
+6. The script creates the database if it does not exist.
+7. The script builds the frontend and backend.
+8. The script starts WalletWise.
+9. The browser opens at `http://localhost:5173`.
+
+Future launches reuse the local configuration and do not ask for the password again.
+
+## Automatic Launch on macOS
+
+First, start MySQL in macOS System Settings or using the installed MySQL management application.
+
+Then double-click:
 
 ```text
-Started BackendApplication
+start.command
 ```
 
-The backend will be available at:
+The script automatically:
+
+1. Creates local configuration during the first launch.
+2. Checks Java, Node.js, npm and MySQL.
+3. Connects to the local MySQL server.
+4. Creates `online_bookkeeping` if it does not exist.
+5. Executes `database/init.sql` for a new database.
+6. Installs frontend dependencies.
+7. Builds the frontend.
+8. Builds the backend.
+9. Starts the backend.
+10. Starts the frontend.
+11. Opens `http://localhost:5173`.
+
+The Terminal window must remain open while WalletWise is running.
+
+Press Enter inside the Terminal window to stop the application.
+
+### macOS Permission
+
+If macOS does not allow `start.command` to run, open Terminal in the project directory and execute:
+
+```bash
+chmod +x start.command
+```
+
+If the project is being prepared for Git, preserve the executable permission:
+
+```bash
+git update-index --chmod=+x start.command
+```
+
+After that, double-click `start.command` again.
+
+## Automatic Launch on Windows
+
+First, start MySQL using Windows Services, MySQL Installer or MySQL Workbench.
+
+Then double-click:
+
+```text
+start-windows.bat
+```
+
+Do not launch `start-windows.ps1` directly.
+
+The BAT file launches the PowerShell startup script with the required execution settings.
+
+The Windows script:
+
+1. Creates local configuration during the first launch.
+2. Checks Java, Node.js, npm and MySQL.
+3. Connects to the local MySQL server.
+4. Creates `online_bookkeeping` if it does not exist.
+5. Executes `database/init.sql` for a new database.
+6. Installs frontend dependencies.
+7. Builds the frontend.
+8. Builds the backend.
+9. Starts both parts of the application.
+10. Opens `http://localhost:5173`.
+
+The command window must remain open while WalletWise is running.
+
+Press Enter inside the command window to stop the application.
+
+## Application Addresses
+
+Frontend:
+
+```text
+http://localhost:5173
+```
+
+Backend:
 
 ```text
 http://localhost:8080
 ```
 
-To stop the backend, press:
+Backend health check:
 
 ```text
-Control + C
+http://localhost:8080/api/health
 ```
 
-## Backend Health Check
+The application uses HTTP on localhost. Local HTTPS configuration is not required for this educational project.
 
-With the backend running, open another Terminal window and execute:
+## Database Initialization
+
+The startup scripts automatically check whether this database exists:
+
+```text
+online_bookkeeping
+```
+
+If the database does not exist, the script executes:
+
+```text
+database/init.sql
+```
+
+If the database already exists, existing users and transactions are preserved.
+
+The database is not deleted during normal startup.
+
+### Manual Database Initialization
+
+If automatic initialization is not being used, run:
 
 ```bash
-curl http://localhost:8080/api/health
+mysql -u root -p < database/init.sql
 ```
 
-Expected response:
+MySQL will ask for the local `root` password.
 
-```json
-{
-  "status": "UP",
-  "database": "UP"
-}
-```
+## Clean Database Reset
 
-## Running Backend Smoke Tests
-
-Keep the backend running in one Terminal window.
-
-Open another Terminal window and run:
+Warning: the following command deletes every WalletWise website user and every transaction.
 
 ```bash
-cd ~/Documents/GitHub/WalletWise
-python3 scripts/smoke_test.py
+mysql -u root -p -e "DROP DATABASE IF EXISTS online_bookkeeping;"
 ```
 
-Expected final result:
+After running the command, launch the appropriate startup script again.
+
+The script will detect that the database is missing and will execute:
 
 ```text
-All WalletWise backend smoke tests passed.
+database/init.sql
 ```
 
-The smoke test verifies:
+For a clean final demonstration:
 
-- user registration;
-- user login;
-- JWT authentication;
-- duplicate username handling;
-- invalid password handling;
-- bill creation;
-- bill filtering;
-- bill editing;
-- bill deletion;
-- input validation;
-- monthly statistics;
-- isolation of different users' data.
+1. Stop WalletWise.
+2. Delete the old `online_bookkeeping` database.
+3. Start MySQL.
+4. Launch WalletWise.
+5. Register one demonstration website user.
+6. Add several understandable income records.
+7. Add several understandable expense records.
+8. Check the dashboard and charts.
+9. Log out and log in again.
+10. Verify that the data remains available.
 
-## Authentication API
+Do not execute `database/test-data.sql` unless demo records are specifically required.
 
-### Register
+Do not execute `scripts/smoke_test.py` before the final demonstration because it creates additional test users.
 
-```http
-POST /api/auth/register
+## Database Structure
+
+### `users`
+
+The `users` table stores:
+
+- `id` — website user ID;
+- `username` — unique username;
+- `password` — BCrypt password hash;
+- `email` — optional email address;
+- `currency` — selected currency;
+- `created_at` — real account creation date and time.
+
+The creation date is generated and stored by MySQL.
+
+It can be viewed with:
+
+```sql
+USE online_bookkeeping;
+
+SELECT id, username, email, currency, created_at
+FROM users;
 ```
 
-Request:
+### `bills`
 
-```json
-{
-  "username": "ivan",
-  "password": "password123"
-}
+The `bills` table stores:
+
+- bill ID;
+- owner user ID;
+- income or expense type;
+- amount;
+- category;
+- description;
+- transaction date;
+- creation date and time.
+
+Each bill belongs to one website user through `user_id`.
+
+### MySQL Root and Website Users
+
+The MySQL `root` user is the database server administrator.
+
+It is not a WalletWise website account and must not be inserted into the `users` table.
+
+WalletWise website users register through the registration page. Their accounts are stored inside the `users` table.
+
+The backend reads the JWT and ensures that every website user can access only their own transactions.
+
+## Backend Local Configuration
+
+The local file contains properties similar to:
+
+```properties
+spring.datasource.url=jdbc:mysql://localhost:3306/online_bookkeeping?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+spring.datasource.username=root
+spring.datasource.password=LOCAL_MYSQL_PASSWORD
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+jwt.secret=LOCAL_GENERATED_BASE64_SECRET
 ```
 
-### Login
-
-```http
-POST /api/auth/login
-```
-
-Request:
-
-```json
-{
-  "username": "ivan",
-  "password": "password123"
-}
-```
-
-Successful registration and login responses contain a JWT token:
-
-```json
-{
-  "token": "JWT_TOKEN",
-  "tokenType": "Bearer",
-  "user": {
-    "id": 1,
-    "username": "ivan",
-    "createdAt": "2026-07-14T10:00:00"
-  }
-}
-```
-
-Protected requests must include the following HTTP header:
-
-```http
-Authorization: Bearer JWT_TOKEN
-```
-
-### Get Current User
-
-```http
-GET /api/auth/me
-```
-
-This endpoint requires a valid JWT.
-
-## Bill API
-
-### Get All Bills
-
-```http
-GET /api/bills
-```
-
-### Filter Bills by Type
-
-```http
-GET /api/bills?type=INCOME
-```
-
-```http
-GET /api/bills?type=EXPENSE
-```
-
-### Get One Bill
-
-```http
-GET /api/bills/{id}
-```
-
-### Create a Bill
-
-```http
-POST /api/bills
-```
-
-Request:
-
-```json
-{
-  "type": "EXPENSE",
-  "category": "FOOD",
-  "amount": 35.50,
-  "billDate": "2026-07-13",
-  "remark": "Lunch"
-}
-```
-
-### Update a Bill
-
-```http
-PUT /api/bills/{id}
-```
-
-Request:
-
-```json
-{
-  "type": "EXPENSE",
-  "category": "FOOD",
-  "amount": 42.00,
-  "billDate": "2026-07-13",
-  "remark": "Lunch and coffee"
-}
-```
-
-### Delete a Bill
-
-```http
-DELETE /api/bills/{id}
-```
-
-A successful deletion returns:
+This file must never be uploaded to GitHub:
 
 ```text
-HTTP 204 No Content
+backend/src/main/resources/application-local.properties
 ```
 
-## Supported Categories
+The safe example file can be uploaded:
 
-### Income Categories
-
-- `SALARY`
-- `BONUS`
-- `INVESTMENT`
-- `OTHER`
-
-### Expense Categories
-
-- `FOOD`
-- `TRANSPORT`
-- `SHOPPING`
-- `HOUSING`
-- `HEALTH`
-- `EDUCATION`
-- `ENTERTAINMENT`
-- `OTHER`
-
-## Statistics API
-
-### Current Month
-
-```http
-GET /api/statistics/monthly
+```text
+backend/src/main/resources/application-local.example.properties
 ```
 
-### Selected Month
+## Manual Backend Launch
 
-```http
-GET /api/statistics/monthly?year=2026&month=7
+Before manual backend launch, make sure that:
+
+- MySQL is running;
+- `online_bookkeeping` exists;
+- `application-local.properties` exists;
+- the local MySQL password is correct.
+
+### macOS and Linux
+
+```bash
+cd backend
+./mvnw spring-boot:run
 ```
 
-Example response:
+### Windows
 
-```json
-{
-  "month": "2026-07",
-  "totalIncome": 5500.00,
-  "totalExpense": 2550.50,
-  "balance": 2949.50,
-  "expenseCategories": [
-    {
-      "category": "HOUSING",
-      "amount": 1500.00
-    },
-    {
-      "category": "FOOD",
-      "amount": 620.50
-    },
-    {
-      "category": "ENTERTAINMENT",
-      "amount": 250.00
-    },
-    {
-      "category": "TRANSPORT",
-      "amount": 180.00
-    }
-  ]
-}
+```bat
+cd backend
+mvnw.cmd spring-boot:run
 ```
 
-## Error Responses
+The backend starts at:
 
-The backend returns structured error responses.
-
-Example:
-
-```json
-{
-  "timestamp": "2026-07-14T10:30:00",
-  "status": 400,
-  "error": "Bad Request",
-  "message": "Amount must be greater than zero",
-  "path": "/api/bills"
-}
+```text
+http://localhost:8080
 ```
 
-Common status codes:
+## Manual Frontend Launch
 
-- `400 Bad Request` — invalid request data;
-- `401 Unauthorized` — missing or invalid JWT;
-- `403 Forbidden` — access is denied;
-- `404 Not Found` — resource does not exist or belongs to another user;
-- `409 Conflict` — username or data conflict.
+Open another terminal:
 
-## CORS
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-The backend accepts development requests from local frontend servers, including:
+The frontend starts at:
 
 ```text
 http://localhost:5173
-http://127.0.0.1:5173
 ```
 
-Other local ports are also supported during development.
+## Frontend Pages
 
-## Security
+- `/login` — user login
+- `/register` — user registration and currency selection
+- `/dashboard` — financial summary and charts
+- `/expenses` — expense management
+- `/income` — income management
+- `/profile` — username, email and currency
 
-- Passwords are stored as BCrypt hashes.
-- Plain-text passwords are never stored in the database.
-- JWT authentication is used for protected endpoints.
-- Every bill query includes the authenticated user's identifier.
-- Users cannot access, modify, or delete another user's bills.
-- Local database passwords and JWT secrets are excluded from Git.
-- Monetary values use MySQL `DECIMAL` and Java `BigDecimal`.
-- SQL queries use MyBatis parameters instead of concatenated user input.
+Protected pages require a valid JWT.
 
-## API Documentation
+## Main API Endpoints
 
-Detailed API information is also available in:
+### Authentication
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
+- `PUT /api/auth/me`
+
+### Bills
+
+- `POST /api/bills`
+- `GET /api/bills`
+- `GET /api/bills/{id}`
+- `PUT /api/bills/{id}`
+- `DELETE /api/bills/{id}`
+
+### Statistics
+
+- `GET /api/statistics/monthly`
+
+### Health
+
+- `GET /api/health`
+
+Detailed API documentation is available in:
 
 ```text
 documentation/API.md
 ```
 
-## Git Workflow
+## Authentication Flow
 
-Backend development is performed in:
+1. A user registers or logs in.
+2. The backend validates the request.
+3. Website passwords are stored only as BCrypt hashes.
+4. The backend generates a JWT.
+5. The frontend stores the JWT in `localStorage`.
+6. Axios adds the token to protected API requests.
+7. The backend validates the JWT.
+8. The backend determines the current website user.
+9. Every user receives only their own profile and transactions.
+
+## Currency Support
+
+WalletWise supports:
+
+- USD — US Dollar
+- EUR — Euro
+- GBP — British Pound
+- CNY — Chinese Yuan
+- RUB — Russian Ruble
+
+The currency is selected during registration.
+
+It can later be changed on the profile page.
+
+The selected currency is stored in the MySQL `users` table.
+
+## Financial Statistics
+
+The dashboard displays:
+
+- monthly income;
+- monthly expenses;
+- monthly balance;
+- savings rate;
+- daily income and expense chart;
+- expense category chart;
+- recent transactions.
+
+The dashboard data is loaded from the backend and calculated using records stored in MySQL.
+
+Savings rate is calculated dynamically and is not stored as a separate database value.
+
+## ECharts
+
+WalletWise uses ECharts through `vue-echarts`.
+
+The charts display real financial data received from the backend.
+
+The project does not use static mock chart data.
+
+## Security Notes
+
+Never commit:
+
+- `application-local.properties`;
+- real MySQL passwords;
+- JWT secrets;
+- generated backend JAR files;
+- `backend/target`;
+- `frontend/node_modules`;
+- `frontend/dist`;
+- IDE configuration;
+- `.DS_Store`;
+- `__MACOSX`.
+
+If a real MySQL password was previously committed, removing the file from the latest commit is not sufficient because it may remain in Git history.
+
+In that situation:
+
+1. Remove the file from Git tracking.
+2. Change the MySQL password.
+3. Update the local configuration with the new password.
+
+## Optional Smoke Test
+
+The optional smoke test is located at:
 
 ```text
-ivan_branch
+scripts/smoke_test.py
 ```
 
-Frontend development should be performed in a separate branch.
+It checks registration, profile updates, bill operations and statistics.
 
-Completed and tested changes are merged into:
+The smoke test creates test website users and test bills.
 
-```text
-main
+Do not run it against the clean final demonstration database unless test data is acceptable.
+
+## Final Demonstration Checklist
+
+Before the final demonstration, verify that:
+
+- MySQL starts successfully;
+- the operating-system startup script works;
+- the frontend opens at `http://localhost:5173`;
+- registration works;
+- currency is required during registration;
+- login works;
+- logout works;
+- username is loaded from the database;
+- email is empty until the user adds it;
+- email is saved in the database;
+- currency is saved in the database;
+- income creation works;
+- income editing works;
+- income deletion works;
+- expense creation works;
+- expense editing works;
+- expense deletion works;
+- data remains after page refresh;
+- data remains after logout and login;
+- dashboard values use database data;
+- ECharts displays real database data;
+- account creation dates are stored in MySQL;
+- different users cannot access each other's data;
+- no real passwords are present in GitHub;
+- `application-local.properties` is not tracked by Git.
+
+## Git Safety Check
+
+Before pushing to GitHub, run:
+
+```bash
+git status
 ```
 
-through a pull request.
+Check whether the local configuration is tracked:
 
-## Final Project Deliverables
+```bash
+git ls-files backend/src/main/resources/application-local.properties
+```
 
-The final project package must include:
+The command must print nothing.
 
-- complete backend source code;
-- complete frontend source code;
-- database creation script;
-- test-data script;
-- project documentation;
-- diagrams;
-- presentation materials;
-- runnable demonstration version.
+If it prints the filename, execute:
+
+```bash
+git rm --cached backend/src/main/resources/application-local.properties
+```
+
+Then commit the `.gitignore` change.
+
+## Final Submission
+
+The final submission should include:
+
+- frontend source code;
+- backend source code;
+- database initialization script;
+- optional test data script;
+- API documentation;
+- README;
+- required report;
+- project presentation.
+
+Generated directories and private configuration files must not be included.

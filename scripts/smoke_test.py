@@ -42,17 +42,24 @@ def request(
     )
 
     try:
-        with urllib.request.urlopen(http_request) as response:
+        with urllib.request.urlopen(
+            http_request
+        ) as response:
             status = response.status
-            response_body = response.read().decode("utf-8")
+            response_body = (
+                response.read().decode("utf-8")
+            )
     except urllib.error.HTTPError as error:
         status = error.code
-        response_body = error.read().decode("utf-8")
+        response_body = (
+            error.read().decode("utf-8")
+        )
 
     if status != expected_status:
         raise AssertionError(
             f"{method} {path}: "
-            f"expected {expected_status}, got {status}. "
+            f"expected {expected_status}, "
+            f"got {status}. "
             f"Response: {response_body}"
         )
 
@@ -72,6 +79,8 @@ def main():
 
     username_a = f"smoke_a_{unique_suffix}"
     username_b = f"smoke_b_{unique_suffix}"
+    email_a = f"{username_a}@example.com"
+
     password = "SmokeTest123!"
 
     print("1. Registering user A")
@@ -82,11 +91,22 @@ def main():
         201,
         {
             "username": username_a,
-            "password": password
+            "password": password,
+            "currency": "USD"
         }
     )
 
     token_a = auth_a["token"]
+
+    check(
+        auth_a["user"]["currency"] == "USD",
+        "Registration currency was not saved"
+    )
+
+    check(
+        auth_a["user"]["email"] is None,
+        "New user email must initially be empty"
+    )
 
     print("2. Registering user B")
 
@@ -96,13 +116,14 @@ def main():
         201,
         {
             "username": username_b,
-            "password": password
+            "password": password,
+            "currency": "EUR"
         }
     )
 
     token_b = auth_b["token"]
 
-    print("3. Checking protected current-user endpoint")
+    print("3. Checking current user")
 
     current_user = request(
         "GET",
@@ -116,7 +137,54 @@ def main():
         "Current user does not match token owner"
     )
 
-    print("4. Checking request without JWT")
+    check(
+        current_user["currency"] == "USD",
+        "Current user has incorrect currency"
+    )
+
+    print("4. Updating profile")
+
+    updated_profile = request(
+        "PUT",
+        "/api/auth/me",
+        200,
+        {
+            "email": email_a,
+            "currency": "CNY"
+        },
+        token_a
+    )
+
+    check(
+        updated_profile["email"] == email_a,
+        "Profile email was not updated"
+    )
+
+    check(
+        updated_profile["currency"] == "CNY",
+        "Profile currency was not updated"
+    )
+
+    print("5. Checking persisted profile")
+
+    persisted_profile = request(
+        "GET",
+        "/api/auth/me",
+        200,
+        token=token_a
+    )
+
+    check(
+        persisted_profile["email"] == email_a,
+        "Profile email was not persisted"
+    )
+
+    check(
+        persisted_profile["currency"] == "CNY",
+        "Profile currency was not persisted"
+    )
+
+    print("6. Checking request without JWT")
 
     request(
         "GET",
@@ -124,7 +192,7 @@ def main():
         401
     )
 
-    print("5. Checking duplicate username")
+    print("7. Checking duplicate username")
 
     request(
         "POST",
@@ -132,11 +200,25 @@ def main():
         409,
         {
             "username": username_a,
-            "password": password
+            "password": password,
+            "currency": "USD"
         }
     )
 
-    print("6. Checking invalid password")
+    print("8. Checking duplicate email")
+
+    request(
+        "PUT",
+        "/api/auth/me",
+        409,
+        {
+            "email": email_a,
+            "currency": "EUR"
+        },
+        token_b
+    )
+
+    print("9. Checking invalid password")
 
     request(
         "POST",
@@ -148,7 +230,7 @@ def main():
         }
     )
 
-    print("7. Creating an expense")
+    print("10. Creating an expense")
 
     expense = request(
         "POST",
@@ -166,7 +248,7 @@ def main():
 
     expense_id = expense["id"]
 
-    print("8. Creating an income")
+    print("11. Creating an income")
 
     request(
         "POST",
@@ -182,7 +264,7 @@ def main():
         token_a
     )
 
-    print("9. Checking bill filtering")
+    print("12. Checking bill filtering")
 
     expenses = request(
         "GET",
@@ -196,7 +278,7 @@ def main():
         "Expense filter returned unexpected data"
     )
 
-    print("10. Checking user-data isolation")
+    print("13. Checking user-data isolation")
 
     request(
         "GET",
@@ -205,11 +287,14 @@ def main():
         token=token_b
     )
 
-    print("11. Checking monthly statistics")
+    print("14. Checking monthly statistics")
 
     statistics = request(
         "GET",
-        "/api/statistics/monthly?year=2026&month=7",
+        (
+            "/api/statistics/monthly"
+            "?year=2026&month=7"
+        ),
         200,
         token=token_a
     )
@@ -232,7 +317,7 @@ def main():
         "Incorrect balance"
     )
 
-    print("12. Updating the expense")
+    print("15. Updating the expense")
 
     updated_expense = request(
         "PUT",
@@ -254,7 +339,7 @@ def main():
         "Bill amount was not updated"
     )
 
-    print("13. Checking invalid amount validation")
+    print("16. Checking invalid amount")
 
     request(
         "POST",
@@ -270,7 +355,7 @@ def main():
         token_a
     )
 
-    print("14. Deleting the expense")
+    print("17. Deleting the expense")
 
     request(
         "DELETE",
@@ -279,7 +364,7 @@ def main():
         token=token_a
     )
 
-    print("15. Checking repeated deletion")
+    print("18. Checking repeated deletion")
 
     request(
         "DELETE",
@@ -289,7 +374,9 @@ def main():
     )
 
     print()
-    print("All WalletWise backend smoke tests passed.")
+    print(
+        "All WalletWise backend smoke tests passed."
+    )
 
 
 if __name__ == "__main__":

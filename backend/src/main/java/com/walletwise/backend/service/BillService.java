@@ -19,21 +19,39 @@ import java.util.Set;
 public class BillService {
 
     private static final Set<String> INCOME_CATEGORIES = Set.of(
+            "PENSION",
+            "SOCIAL_BENEFITS",
+            "FAMILY_SUPPORT",
+            "PART_TIME_WORK",
+            "SAVINGS_INTEREST",
+            "OTHER",
+
+            // Legacy categories are kept for existing data
+            // and optional smoke tests.
             "SALARY",
             "BONUS",
-            "INVESTMENT",
-            "OTHER"
+            "INVESTMENT"
     );
 
     private static final Set<String> EXPENSE_CATEGORIES = Set.of(
-            "FOOD",
-            "TRANSPORT",
-            "SHOPPING",
+            "GROCERIES",
+            "MEDICINE",
+            "MEDICAL_CARE",
             "HOUSING",
+            "UTILITIES",
+            "TRANSPORT",
+            "HOME_CARE",
+            "FAMILY_GIFTS",
+            "LEISURE",
+            "OTHER",
+
+            // Legacy categories are kept for existing data
+            // and optional smoke tests.
+            "FOOD",
+            "SHOPPING",
             "HEALTH",
             "EDUCATION",
-            "ENTERTAINMENT",
-            "OTHER"
+            "ENTERTAINMENT"
     );
 
     private final BillMapper billMapper;
@@ -55,8 +73,8 @@ public class BillService {
 
         Bill bill = new Bill();
         bill.setUserId(user.getId());
-        applyRequest(bill, request);
 
+        applyRequest(bill, request);
         billMapper.insert(bill);
 
         Bill savedBill = getRequiredBill(
@@ -74,7 +92,10 @@ public class BillService {
         User user = getRequiredUser(username);
 
         return billMapper
-                .findAllByUserId(user.getId(), type)
+                .findAllByUserId(
+                        user.getId(),
+                        type
+                )
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -85,7 +106,11 @@ public class BillService {
             Long id
     ) {
         User user = getRequiredUser(username);
-        Bill bill = getRequiredBill(id, user.getId());
+
+        Bill bill = getRequiredBill(
+                id,
+                user.getId()
+        );
 
         return toResponse(bill);
     }
@@ -96,12 +121,20 @@ public class BillService {
             BillRequest request
     ) {
         User user = getRequiredUser(username);
-        Bill bill = getRequiredBill(id, user.getId());
+
+        Bill bill = getRequiredBill(
+                id,
+                user.getId()
+        );
 
         applyRequest(bill, request);
         billMapper.update(bill);
 
-        Bill updatedBill = getRequiredBill(id, user.getId());
+        Bill updatedBill = getRequiredBill(
+                id,
+                user.getId()
+        );
+
         return toResponse(updatedBill);
     }
 
@@ -111,7 +144,10 @@ public class BillService {
     ) {
         User user = getRequiredUser(username);
 
-        getRequiredBill(id, user.getId());
+        getRequiredBill(
+                id,
+                user.getId()
+        );
 
         billMapper.deleteByIdAndUserId(
                 id,
@@ -132,7 +168,11 @@ public class BillService {
         bill.setCategory(category);
         bill.setAmount(request.amount());
         bill.setBillDate(request.billDate());
-        bill.setRemark(normalizeRemark(request.remark()));
+        bill.setRemark(
+                normalizeRemark(
+                        request.remark()
+                )
+        );
     }
 
     private String normalizeCategory(
@@ -159,7 +199,10 @@ public class BillService {
     }
 
     private String normalizeRemark(String remark) {
-        if (remark == null || remark.isBlank()) {
+        if (
+                remark == null ||
+                remark.isBlank()
+        ) {
             return null;
         }
 
@@ -167,7 +210,8 @@ public class BillService {
     }
 
     private User getRequiredUser(String username) {
-        User user = userMapper.findByUsername(username);
+        User user =
+                userMapper.findByUsername(username);
 
         if (user == null) {
             throw new ResponseStatusException(
@@ -183,7 +227,11 @@ public class BillService {
             Long id,
             Long userId
     ) {
-        Bill bill = billMapper.findByIdAndUserId(id, userId);
+        Bill bill =
+                billMapper.findByIdAndUserId(
+                        id,
+                        userId
+                );
 
         if (bill == null) {
             throw new ResponseStatusException(
