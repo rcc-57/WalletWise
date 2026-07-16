@@ -1,12 +1,25 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import {
+  computed,
+  onMounted,
+  ref,
+  watch
+} from 'vue'
+
+import {
+  ElMessage,
+  ElMessageBox
+} from 'element-plus'
+
 import IncomeFilters from '@/components/income/IncomeFilters.vue'
 import IncomeTable from '@/components/income/IncomeTable.vue'
 import AddIncomeModal from '@/components/income/AddIncomeModal.vue'
 import EditIncomeModal from '@/components/income/EditIncomeModal.vue'
+
 import { useIncomeStore } from '@/stores/income'
 
 const incomeStore = useIncomeStore()
+
 const showAddModal = ref(false)
 const showEditModal = ref(false)
 
@@ -19,38 +32,65 @@ const filters = ref({
 const filteredIncome = computed(() => {
   let list = [...incomeStore.income]
 
-  if (filters.value.search) {
-    const term = filters.value.search.toLowerCase()
+  const searchTerm = filters.value.search
+    .trim()
+    .toLowerCase()
+
+  if (searchTerm) {
+    list = list.filter((item) => {
+      const category = String(item.category || '').toLowerCase()
+      const remark = String(item.remark || '').toLowerCase()
+      const date = String(item.date || '').toLowerCase()
+
+      return (
+        category.includes(searchTerm) ||
+        remark.includes(searchTerm) ||
+        date.includes(searchTerm)
+      )
+    })
+  }
+
+  if (
+    filters.value.category &&
+    filters.value.category !== 'All'
+  ) {
     list = list.filter(
-      (item) =>
-        item.category.toLowerCase().includes(term) ||
-        item.remark.toLowerCase().includes(term) ||
-        item.date.toLowerCase().includes(term)
+      (item) => item.category === filters.value.category
     )
   }
 
-  if (filters.value.category && filters.value.category !== 'All') {
-    list = list.filter((item) => item.category === filters.value.category)
-  }
-
-  list.sort((a, b) => {
+  list.sort((first, second) => {
     if (filters.value.sort === 'newest') {
-      return new Date(b.date) - new Date(a.date)
+      return new Date(second.date) - new Date(first.date)
     }
+
     if (filters.value.sort === 'oldest') {
-      return new Date(a.date) - new Date(b.date)
+      return new Date(first.date) - new Date(second.date)
     }
+
     if (filters.value.sort === 'highest') {
-      return b.amount - a.amount
+      return Number(second.amount) - Number(first.amount)
     }
+
     if (filters.value.sort === 'lowest') {
-      return a.amount - b.amount
+      return Number(first.amount) - Number(second.amount)
     }
+
     return 0
   })
 
   return list
 })
+
+async function loadIncome() {
+  try {
+    await incomeStore.fetchIncome()
+  } catch {
+    ElMessage.error(
+      incomeStore.error || 'Unable to load income records.'
+    )
+  }
+}
 
 function onFilterChange(payload) {
   filters.value = payload
@@ -61,15 +101,38 @@ function onEditIncome(income) {
   showEditModal.value = true
 }
 
-function onDeleteIncome(id) {
-  incomeStore.deleteIncome(id)
+async function onDeleteIncome(id) {
+  try {
+    await ElMessageBox.confirm(
+      'Are you sure you want to delete this income record?',
+      'Delete income',
+      {
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel',
+        type: 'warning'
+      }
+    )
+
+    await incomeStore.deleteIncome(id)
+
+    ElMessage.success('Income record deleted.')
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') {
+      ElMessage.error(
+        incomeStore.error || 'Unable to delete the income record.'
+      )
+    }
+  }
 }
 
 watch(showEditModal, (value) => {
   if (!value) {
-    incomeStore.selectedIncome = null
-    incomeStore.isEditDialogOpen = false
+    incomeStore.clearSelectedIncome()
   }
+})
+
+onMounted(() => {
+  loadIncome()
 })
 </script>
 
@@ -80,11 +143,35 @@ watch(showEditModal, (value) => {
         <h1>Income</h1>
         <p>Track recurring and one-off earnings clearly</p>
       </div>
+
+      <el-button
+        :loading="incomeStore.loading"
+        @click="loadIncome"
+      >
+        Refresh
+      </el-button>
     </div>
 
-    <IncomeFilters @filter-change="onFilterChange" @add-income="showAddModal = true" />
+    <el-alert
+      v-if="incomeStore.error"
+      :title="incomeStore.error"
+      type="error"
+      show-icon
+      :closable="false"
+    />
 
-    <IncomeTable :income="filteredIncome" @edit="onEditIncome" @delete="onDeleteIncome" />
+    <IncomeFilters
+      @filter-change="onFilterChange"
+      @add-income="showAddModal = true"
+    />
+
+    <div v-loading="incomeStore.loading">
+      <IncomeTable
+        :income="filteredIncome"
+        @edit="onEditIncome"
+        @delete="onDeleteIncome"
+      />
+    </div>
 
     <AddIncomeModal v-model="showAddModal" />
     <EditIncomeModal v-model="showEditModal" />
@@ -105,14 +192,15 @@ watch(showEditModal, (value) => {
 }
 
 .page-header h1 {
+  margin: 0 0 6px;
+  color: #111827;
   font-size: 32px;
   font-weight: 700;
-  color: #111827;
-  margin-bottom: 6px;
 }
 
 .page-header p {
-  font-size: 14px;
+  margin: 0;
   color: #64748b;
+  font-size: 14px;
 }
 </style>

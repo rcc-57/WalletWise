@@ -1,5 +1,7 @@
 <script setup>
 import { reactive, watch } from 'vue'
+import { ElMessage } from 'element-plus'
+
 import { useIncomeStore } from '@/stores/income'
 
 const visible = defineModel()
@@ -10,8 +12,7 @@ const form = reactive({
   category: '',
   amount: null,
   date: '',
-  remark: '',
-  type: 'INCOME'
+  remark: ''
 })
 
 const categories = [
@@ -21,57 +22,107 @@ const categories = [
   'Other'
 ]
 
+function resetForm() {
+  form.id = null
+  form.category = ''
+  form.amount = null
+  form.date = ''
+  form.remark = ''
+}
+
+function validateForm() {
+  if (!form.id) {
+    ElMessage.error('Income record was not selected.')
+    return false
+  }
+
+  if (!form.category) {
+    ElMessage.warning('Please select an income category.')
+    return false
+  }
+
+  if (
+    form.amount === null ||
+    Number(form.amount) <= 0
+  ) {
+    ElMessage.warning('Amount must be greater than zero.')
+    return false
+  }
+
+  if (!form.date) {
+    ElMessage.warning('Please select an income date.')
+    return false
+  }
+
+  return true
+}
+
+async function saveChanges() {
+  if (!validateForm()) {
+    return
+  }
+
+  try {
+    await incomeStore.updateIncome({
+      id: form.id,
+      category: form.category,
+      amount: Number(form.amount),
+      date: form.date,
+      remark: form.remark
+    })
+
+    ElMessage.success('Income record updated.')
+
+    resetForm()
+    visible.value = false
+  } catch {
+    ElMessage.error(
+      incomeStore.error || 'Unable to update the income record.'
+    )
+  }
+}
+
 watch(
   () => incomeStore.selectedIncome,
   (income) => {
-    if (income) {
-      form.id = income.id
-      form.category = income.category
-      form.amount = income.amount
-      form.date = income.date
-      form.remark = income.remark
-      form.type = income.type || 'INCOME'
-    } else {
-      form.id = null
-      form.category = ''
-      form.amount = null
-      form.date = ''
-      form.remark = ''
-      form.type = 'INCOME'
+    if (!income) {
+      resetForm()
+      return
     }
+
+    form.id = income.id
+    form.category = income.category
+    form.amount = Number(income.amount)
+    form.date = income.date
+    form.remark = income.remark || ''
   },
-  { immediate: true }
+  {
+    immediate: true
+  }
 )
 
 watch(visible, (value) => {
   if (!value) {
-    incomeStore.selectedIncome = null
+    incomeStore.clearSelectedIncome()
+    resetForm()
   }
 })
-
-function updateIncome() {
-  if (!form.id || !form.category || !form.date || form.amount === null || form.amount <= 0) {
-    return
-  }
-
-  incomeStore.updateIncome({
-    id: form.id,
-    category: form.category,
-    amount: form.amount,
-    date: form.date,
-    remark: form.remark || '',
-    type: form.type
-  })
-
-  visible.value = false
-}
 </script>
 
 <template>
-  <el-dialog v-model="visible" title="Edit Income" width="500">
+  <el-dialog
+    v-model="visible"
+    title="Edit Income"
+    width="500px"
+    :close-on-click-modal="!incomeStore.loading"
+    :close-on-press-escape="!incomeStore.loading"
+  >
     <el-form label-position="top">
-      <el-form-item label="Category">
-        <el-select v-model="form.category">
+      <el-form-item label="Category" required>
+        <el-select
+          v-model="form.category"
+          style="width: 100%"
+        >
           <el-option
             v-for="item in categories"
             :key="item"
@@ -81,22 +132,52 @@ function updateIncome() {
         </el-select>
       </el-form-item>
 
-      <el-form-item label="Amount">
-        <el-input-number v-model="form.amount" :min="0" style="width: 100%;" />
+      <el-form-item label="Amount" required>
+        <el-input-number
+          v-model="form.amount"
+          :min="0.01"
+          :step="0.01"
+          :precision="2"
+          style="width: 100%"
+        />
       </el-form-item>
 
-      <el-form-item label="Date">
-        <el-date-picker v-model="form.date" type="date" style="width: 100%;" />
+      <el-form-item label="Date" required>
+        <el-date-picker
+          v-model="form.date"
+          type="date"
+          value-format="YYYY-MM-DD"
+          style="width: 100%"
+        />
       </el-form-item>
 
       <el-form-item label="Remark">
-        <el-input v-model="form.remark" type="textarea" :rows="3" />
+        <el-input
+          v-model="form.remark"
+          type="textarea"
+          :rows="3"
+          maxlength="255"
+          show-word-limit
+          placeholder="Optional description"
+        />
       </el-form-item>
     </el-form>
 
     <template #footer>
-      <el-button @click="visible = false">Cancel</el-button>
-      <el-button type="primary" @click="updateIncome">Update</el-button>
+      <el-button
+        :disabled="incomeStore.loading"
+        @click="visible = false"
+      >
+        Cancel
+      </el-button>
+
+      <el-button
+        type="primary"
+        :loading="incomeStore.loading"
+        @click="saveChanges"
+      >
+        Update
+      </el-button>
     </template>
   </el-dialog>
 </template>
