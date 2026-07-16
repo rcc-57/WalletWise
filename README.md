@@ -1,19 +1,54 @@
 # WalletWise
 
-WalletWise is a personal online bookkeeping web application built with a Spring Boot backend and a Vue 3 frontend. It allows users to register, log in, track income and expenses, and view monthly financial statistics.
+WalletWise is a personal online bookkeeping web application developed as part of the Software Production Internship.
+
+The application allows users to create an account, manage income and expenses, review monthly statistics, update profile information, and select their preferred currency.
+
+## Core Features
+
+### Authentication
+
+- User registration with username, password, and currency
+- Username uniqueness validation
+- BCrypt password hashing
+- JWT-based authentication
+- Protected frontend routes and backend endpoints
+- Secure logout
+- Current-user profile loading
+
+### Bill Management
+
+- Create income and expense records
+- Edit existing records
+- Delete records
+- Filter records by type and category
+- Search records by date, category, and remark
+- Sort records by date and amount
+- Fixed income and expense categories
+- Reverse chronological backend sorting
+- User data isolation
+
+### Financial Statistics
+
+- Monthly income
+- Monthly expenses
+- Monthly balance
+- Savings rate
+- Expense distribution by category
+- Daily income and expense trend
+- Recent transactions
+- Month and year selection
+- Automatic statistics recalculation after bill changes
+
+### User Profile
+
+- Display registered username
+- Add or remove an email address
+- Change preferred currency
+- Persist profile changes in MySQL
+- Display account creation date
 
 ## Technology Stack
-
-### Backend
-
-- Java 17
-- Spring Boot 3.5
-- Spring Security
-- JWT authentication
-- MyBatis
-- MySQL 8
-- Maven
-- BCrypt password hashing
 
 ### Frontend
 
@@ -23,318 +58,581 @@ WalletWise is a personal online bookkeeping web application built with a Spring 
 - Element Plus
 - Axios
 - ECharts
+- vue-echarts
 - Vite
 
-## Repository Structure
+### Backend
+
+- Java 17
+- Spring Boot 3.5
+- Spring Security
+- JWT
+- BCrypt
+- MyBatis
+- Jakarta Validation
+- Maven
+
+### Database
+
+- MySQL 8
+- DECIMAL for monetary values
+- Foreign-key relationships
+- Unique username and email constraints
+
+## Project Structure
 
 ```text
 WalletWise/
-├── backend/          Spring Boot backend
-├── database/         Database scripts
-├── frontend/         Vue frontend application
-├── documentation/    Project documentation
-├── scripts/          Smoke test script
-└── README.md         Project documentation
+├── backend/
+│   ├── src/main/java/com/walletwise/backend/
+│   │   ├── config/
+│   │   ├── controller/
+│   │   ├── dto/
+│   │   ├── entity/
+│   │   ├── exception/
+│   │   ├── mapper/
+│   │   ├── security/
+│   │   └── service/
+│   ├── src/main/resources/
+│   ├── pom.xml
+│   ├── mvnw
+│   └── mvnw.cmd
+├── database/
+│   ├── init.sql
+│   ├── migrate-profile.sql
+│   └── test-data.sql
+├── documentation/
+│   └── API.md
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── api/
+│   │   ├── components/
+│   │   ├── layouts/
+│   │   ├── plugins/
+│   │   ├── router/
+│   │   ├── stores/
+│   │   ├── utils/
+│   │   └── views/
+│   ├── package.json
+│   └── vite.config.js
+├── scripts/
+│   └── smoke_test.py
+├── start.command
+└── README.md
 ```
+
+## Database Model
+
+WalletWise uses two main tables.
+
+### users
+
+Stores registered website users.
+
+```text
+id
+username
+password
+email
+currency
+created_at
+```
+
+The password is stored as a BCrypt hash. The original plaintext password is never saved.
+
+The email is optional and is initially `NULL`.
+
+Currency is selected during registration and can later be changed from the Profile page.
+
+Supported currencies:
+
+```text
+USD
+EUR
+GBP
+CNY
+RUB
+```
+
+### bills
+
+Stores income and expense records.
+
+```text
+id
+user_id
+type
+category
+amount
+bill_date
+remark
+created_at
+updated_at
+```
+
+The `user_id` field connects each bill to its owner.
+
+The backend always filters records by the authenticated user, preventing access to another user's financial data.
 
 ## Prerequisites
 
-Install the following software before running WalletWise:
+Install the following software:
 
-- Git
 - Java JDK 17
 - MySQL 8
-- Node.js 22.18.0 or newer (or Node 24.12.0+)
+- Node.js `22.22.2+` or `24.15.0+`
 - npm
+- Git
 
-## Required Software Versions
-
-- Java: 17
-- MySQL: 8.x
-- Node.js: ^22.18.0 or >=24.12.0
-- npm: compatible with installed Node.js
-
-## Database Setup
-
-### 1. Create the database and tables
-
-Open a terminal in the repository root:
+Verify the installed versions:
 
 ```bash
-cd c:/Users/User/Documents/GitHub/WalletWise
+java -version
+node -v
+npm -v
+mysql --version
 ```
-
-Run the initialization script:
-
-```bash
-mysql -u root -p < database/init.sql
-```
-
-### 2. Load demo data
-
-Run:
-
-```bash
-mysql -u root -p < database/test-data.sql
-```
-
-### Demo credentials
-
-- Username: `demo_walletwise`
-- Password: `Demo123!`
 
 ## Backend Configuration
 
-### 1. Create local application properties
+The backend uses:
 
-Copy the example backend configuration file:
+```text
+backend/src/main/resources/application.properties
+```
+
+for general settings and:
+
+```text
+backend/src/main/resources/application-local.properties
+```
+
+for local database credentials and the JWT secret.
+
+Create the local file from the example if it does not exist:
 
 ```bash
 cd backend
-copy src\main\resources\application-local.example.properties src\main\resources\application-local.properties
+cp src/main/resources/application-local.example.properties \
+   src/main/resources/application-local.properties
 ```
 
-Edit `backend/src/main/resources/application-local.properties` and set your MySQL credentials and JWT secret.
-
-### 2. Required backend properties
-
-The file should include:
+Example configuration:
 
 ```properties
 spring.datasource.url=jdbc:mysql://localhost:3306/online_bookkeeping?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
 spring.datasource.username=root
-spring.datasource.password=YOUR_MYSQL_PASSWORD
+spring.datasource.password=YOUR_REAL_MYSQL_PASSWORD
 spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 
-jwt.secret=YOUR_GENERATED_JWT_SECRET
+jwt.secret=YOUR_BASE64_JWT_SECRET
 ```
 
-`jwt.secret` must be a valid Base64-encoded secret. Example generation command:
+Generate a JWT secret:
 
 ```bash
 openssl rand -base64 32
 ```
 
-### 3. Backend configuration file details
+The real `application-local.properties` file must not be committed to Git.
 
-The backend uses `backend/src/main/resources/application.properties` for runtime settings:
+## Automatic macOS Startup
 
-- `spring.application.name=walletwise-backend`
-- `spring.profiles.active=local`
-- `server.port=8080`
-- `mybatis.configuration.map-underscore-to-camel-case=true`
-- `jwt.expiration-ms=86400000`
-
-## JWT Configuration
-
-The backend signs and validates JWT tokens using the secret configured in `jwt.secret` and expires tokens after `86400000` milliseconds (24 hours).
-
-## Running MySQL
-
-Start your local MySQL server and ensure it is accessible on `localhost:3306`. Use the configured username and password from `application-local.properties`.
-
-## Running the Backend
-
-From the root directory:
-
-```bash
-cd backend
-./mvnw spring-boot:run
-```
-
-On Windows:
-
-```bash
-cd backend
-mvnw.cmd spring-boot:run
-```
-
-The backend starts on:
+WalletWise includes:
 
 ```text
-http://localhost:8080
+start.command
 ```
 
-## Backend Health Check
+The launcher:
 
-Verify the backend is running:
+1. Checks that Java, Node.js, npm, MySQL, and curl are available.
+2. Checks the MySQL connection.
+3. Creates the database automatically if it does not exist.
+4. Verifies the required tables and profile fields.
+5. Installs frontend dependencies.
+6. Builds the frontend.
+7. Builds the backend.
+8. Starts the backend on port `8080`.
+9. Starts the frontend on port `5173`.
+10. Opens the application in the browser.
+
+Give the launcher execution permission once:
 
 ```bash
-curl http://localhost:8080/api/health
+chmod +x start.command
 ```
 
-## Frontend Configuration
+Daily startup procedure:
 
-### 1. Install dependencies
+1. Start MySQL from macOS System Settings.
+2. Double-click `start.command`.
 
-From the frontend folder:
+Alternatively:
 
 ```bash
-cd frontend
-npm install
+./start.command
 ```
 
-### 2. Axios base URL
-
-The frontend Axios client is configured in `frontend/src/api/client.js` with:
-
-```js
-baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
-```
-
-If you need to override the backend URL, set `VITE_API_BASE_URL` in your shell or Vite environment.
-
-### 3. Vite environment variables
-
-The frontend reads `VITE_API_BASE_URL` from `import.meta.env`.
-
-## Running the Frontend
-
-From the frontend directory:
-
-```bash
-cd frontend
-npm run dev
-```
-
-Open the local address shown by Vite, typically:
+Open the application at:
 
 ```text
 http://localhost:5173
 ```
 
-## Available Frontend Pages
+Press `Control+C` in the launcher terminal to stop both servers.
 
-Configured in `frontend/src/router/index.js`:
+## Manual Database Initialization
 
-- `/login` — Login page
-- `/register` — Registration page
-- `/dashboard` — Dashboard page (authenticated)
-- `/expenses` — Expenses management
-- `/income` — Income management
-- `/analytics` — Financial analytics
-- `/profile` — User profile
-- `/settings` — App settings
+To create the database manually:
 
-The root `/` redirects to `/login`.
+```bash
+mysql -u root -p < database/init.sql
+```
 
-## Available Backend APIs
+The initialization script creates:
 
-### Auth APIs
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `GET /api/auth/me`
+```text
+online_bookkeeping
+├── users
+└── bills
+```
 
-### Bill APIs
-- `POST /api/bills`
-- `GET /api/bills`
-- `GET /api/bills/{id}`
-- `PUT /api/bills/{id}`
-- `DELETE /api/bills/{id}`
+Running `init.sql` again does not delete existing data because it uses:
 
-### Statistics APIs
-- `GET /api/statistics/monthly`
+```sql
+CREATE DATABASE IF NOT EXISTS
+CREATE TABLE IF NOT EXISTS
+```
 
-### Health API
-- `GET /api/health`
+## Clean Database Reset
 
-## Authentication Flow
+Warning: this permanently deletes all WalletWise users and bills.
 
-1. User registers via `POST /api/auth/register`.
-2. Backend responds with a JWT and user details.
-3. User logs in via `POST /api/auth/login`.
-4. Frontend stores the token in `localStorage` under `walletwise_token`.
-5. Axios attaches `Authorization: Bearer <token>` to API requests.
-6. Backend verifies the JWT with `JwtAuthenticationFilter`.
-7. Protected endpoints require authentication.
+Delete only the WalletWise database:
 
-## Project Architecture
+```bash
+mysql -u root -p -e \
+  "DROP DATABASE IF EXISTS online_bookkeeping;"
+```
 
-### Backend
-- `backend/src/main/java/com/walletwise/backend/config/` — security and CORS configuration.
-- `backend/src/main/java/com/walletwise/backend/controller/` — REST controllers.
-- `backend/src/main/java/com/walletwise/backend/dto/` — request and response DTOs.
-- `backend/src/main/java/com/walletwise/backend/security/` — JWT auth and token handling.
-- `backend/src/main/resources/` — properties files.
+Then either execute:
 
-### Frontend
-- `frontend/src/api/` — Axios client.
-- `frontend/src/router/` — application routes.
-- `frontend/src/stores/` — Pinia state management.
-- `frontend/src/views/` — page views.
-- `frontend/src/components/` — reusable UI components.
-- `frontend/src/layouts/` — layout components.
+```bash
+mysql -u root -p < database/init.sql
+```
 
-## API Communication Flow
+or start `start.command`. The launcher will automatically recreate the missing database.
 
-- Frontend requests go through `frontend/src/api/client.js`.
-- Axios uses `VITE_API_BASE_URL` or `http://localhost:8080`.
-- Authorization headers are attached when a token exists.
-- Backend controllers use Spring Security authentication context.
+After a clean reset, do not run `migrate-profile.sql`, because the latest `init.sql` already includes email and currency fields.
 
-## Database Scripts
+## Database Migration
 
-- `database/init.sql` — creates the `online_bookkeeping` database, `users`, and `bills` tables.
-- `database/test-data.sql` — inserts a demo user and demo bills.
+The migration file:
 
-## Demo Credentials
+```text
+database/migrate-profile.sql
+```
 
-- Username: `demo_walletwise`
-- Password: `Demo123!`
+exists only for databases created with an older version of WalletWise.
 
-## Build Commands
+It adds:
 
-### Backend
-- `./mvnw clean package`
-- `./mvnw spring-boot:run`
+```text
+email
+currency
+```
 
-### Frontend
-- `npm install`
-- `npm run dev`
-- `npm run build`
-- `npm run preview`
+to an existing `users` table.
 
-## Development Commands
+Run it only once on an old database:
 
-### Backend
+```bash
+mysql -u root -p < database/migrate-profile.sql
+```
+
+Do not run it after creating a new database with the latest `init.sql`.
+
+## Optional Test Data
+
+The file:
+
+```text
+database/test-data.sql
+```
+
+creates an optional demonstration account and several bills.
+
+Demo credentials:
+
+```text
+Username: demo_walletwise
+Password: Demo123!
+Currency: USD
+```
+
+Load the optional data:
+
+```bash
+mysql -u root -p < database/test-data.sql
+```
+
+The application does not require this account. Normal users can register through the website.
+
+Do not execute `test-data.sql` when preparing an empty final database.
+
+## Manual Backend Startup
+
+Start MySQL first.
+
+From the backend directory:
+
 ```bash
 cd backend
+chmod +x mvnw
 ./mvnw spring-boot:run
 ```
 
-### Frontend
+The backend starts at:
+
+```text
+http://localhost:8080
+```
+
+Health check:
+
+```bash
+curl http://localhost:8080/api/health
+```
+
+## Manual Frontend Startup
+
+From the frontend directory:
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-## Production Build Commands
+The development server normally starts at:
+
+```text
+http://localhost:5173
+```
+
+## Production Builds
 
 ### Backend
+
 ```bash
 cd backend
 ./mvnw clean package
 ```
 
+The generated JAR is located at:
+
+```text
+backend/target/backend-0.0.1-SNAPSHOT.jar
+```
+
+Run the JAR:
+
+```bash
+java -jar target/backend-0.0.1-SNAPSHOT.jar
+```
+
 ### Frontend
+
 ```bash
 cd frontend
 npm install
 npm run build
 ```
 
-## Common Troubleshooting
+The generated frontend is located at:
 
-- If the frontend cannot reach the backend, verify `VITE_API_BASE_URL` or use the default `http://localhost:8080`.
-- If backend startup fails, confirm MySQL is running and the connection properties in `application-local.properties` are correct.
-- If JWT validation fails, ensure `jwt.secret` is a Base64 string and the same secret is used for all requests.
-- If there are CORS issues, check backend `SecurityConfig` allows `http://localhost:*` and `http://127.0.0.1:*`.
+```text
+frontend/dist/
+```
 
-## Notes
+Preview the build:
 
-- Backend runs on port `8080`.
-- Frontend Vite server typically runs on port `5173`.
-- Demo account and data are defined in `database/test-data.sql`.
-- presentation materials;
-- runnable demonstration version.
+```bash
+npm run preview
+```
+
+## Frontend Routes
+
+Public routes:
+
+```text
+/login
+/register
+```
+
+Protected routes:
+
+```text
+/dashboard
+/expenses
+/income
+/profile
+```
+
+The former Analytics page was merged into Dashboard to avoid duplicate statistics and charts.
+
+The Settings page was removed. Currency selection is available in Profile and is stored in MySQL.
+
+## API Overview
+
+### Authentication and Profile
+
+```text
+POST /api/auth/register
+POST /api/auth/login
+GET  /api/auth/me
+PUT  /api/auth/me
+```
+
+### Bills
+
+```text
+POST   /api/bills
+GET    /api/bills
+GET    /api/bills/{id}
+PUT    /api/bills/{id}
+DELETE /api/bills/{id}
+```
+
+### Statistics
+
+```text
+GET /api/statistics/monthly
+```
+
+### Health
+
+```text
+GET /api/health
+```
+
+Detailed API documentation is available in:
+
+```text
+documentation/API.md
+```
+
+## Authentication Flow
+
+1. The user registers or logs in.
+2. The backend validates the request.
+3. The backend creates a signed JWT.
+4. The frontend stores the token in `localStorage`.
+5. Axios adds the token to protected requests:
+
+```http
+Authorization: Bearer <token>
+```
+
+6. Spring Security validates the token.
+7. The backend identifies the current user.
+8. Protected endpoints return only that user's data.
+
+## Financial Calculations
+
+All monetary values use:
+
+```text
+BigDecimal
+```
+
+in Java and:
+
+```text
+DECIMAL(12, 2)
+```
+
+in MySQL.
+
+This prevents precision problems associated with `float` and `double`.
+
+Monthly balance:
+
+```text
+Balance = Total Income - Total Expenses
+```
+
+Savings rate:
+
+```text
+Savings Rate = Balance / Total Income × 100
+```
+
+Savings rate is calculated from database values and is not stored separately.
+
+## Data Visualization
+
+WalletWise uses ECharts through `vue-echarts`.
+
+Dashboard includes:
+
+- Daily income and expense line chart
+- Expense category pie chart
+
+All chart data comes from the authenticated user's bills and monthly statistics.
+
+Chart.js and static mock datasets are not used.
+
+## Smoke Test
+
+Start MySQL and the backend before running:
+
+```bash
+python3 scripts/smoke_test.py
+```
+
+The smoke test checks:
+
+- Registration with currency
+- JWT authentication
+- Profile update
+- Email persistence
+- Currency persistence
+- Duplicate username handling
+- Duplicate email handling
+- Bill creation
+- Bill filtering
+- User data isolation
+- Monthly statistics
+- Bill update
+- Validation
+- Bill deletion
+
+Important: each smoke-test run creates test users in the database.
+
+Do not run it on the final demonstration database after the final reset.
+
+## Security
+
+WalletWise implements:
+
+- BCrypt password hashing
+- JWT authentication
+- Stateless Spring Security
+- Protected API endpoints
+- User data isolation
+- Request validation
+- Username uniqueness
+- Email uniqueness
+- Fixed bill categories
+- CORS configuration for local frontend development
+
+## Final Demonstration Preparation
+
+Recommended procedure:
+
+1. Delete the old `online_bookkeeping` database.
+2. Start MySQL.
+3. Run `start.command`.
