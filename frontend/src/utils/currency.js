@@ -31,8 +31,6 @@ export const CURRENCY_OPTIONS = [
   },
 ]
 
-// Дополнительные экспорты оставлены для совместимости
-// с существующими компонентами.
 export const SUPPORTED_CURRENCIES = CURRENCY_OPTIONS
 export const supportedCurrencies = CURRENCY_OPTIONS
 
@@ -65,11 +63,18 @@ export function formatMoney(value, currency = 'USD') {
     ? currency
     : 'USD'
 
-  return new Intl.NumberFormat('en-US', {
+  const formattedValue = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: supportedCurrency,
     currencyDisplay: 'narrowSymbol',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(numericValue)
+
+  // Добавляем узкий неразрывный пробел именно между ¥ и цифрами.
+  if (supportedCurrency === 'CNY') {
+    return formattedValue.replace(/^¥/, '¥\u202F')
+  }
+
+  return formattedValue
 }

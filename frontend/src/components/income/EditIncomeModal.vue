@@ -3,6 +3,9 @@ import { reactive, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 
 import { useIncomeStore } from '@/stores/income'
+import {
+  INCOME_CATEGORIES
+} from '@/constants/categories'
 
 const visible = defineModel()
 const incomeStore = useIncomeStore()
@@ -15,13 +18,6 @@ const form = reactive({
   remark: ''
 })
 
-const categories = [
-  'Salary',
-  'Bonus',
-  'Investment',
-  'Other'
-]
-
 function resetForm() {
   form.id = null
   form.category = ''
@@ -32,12 +28,18 @@ function resetForm() {
 
 function validateForm() {
   if (!form.id) {
-    ElMessage.error('Income record was not selected.')
+    ElMessage.error(
+      'Income record was not selected.'
+    )
+
     return false
   }
 
   if (!form.category) {
-    ElMessage.warning('Please select an income category.')
+    ElMessage.warning(
+      'Please select an income category.'
+    )
+
     return false
   }
 
@@ -45,12 +47,18 @@ function validateForm() {
     form.amount === null ||
     Number(form.amount) <= 0
   ) {
-    ElMessage.warning('Amount must be greater than zero.')
+    ElMessage.warning(
+      'Amount must be greater than zero.'
+    )
+
     return false
   }
 
   if (!form.date) {
-    ElMessage.warning('Please select an income date.')
+    ElMessage.warning(
+      'Please select an income date.'
+    )
+
     return false
   }
 
@@ -71,13 +79,16 @@ async function saveChanges() {
       remark: form.remark
     })
 
-    ElMessage.success('Income record updated.')
+    ElMessage.success(
+      'Income record updated.'
+    )
 
     resetForm()
     visible.value = false
   } catch {
     ElMessage.error(
-      incomeStore.error || 'Unable to update the income record.'
+      incomeStore.error ||
+        'Unable to update the income record.'
     )
   }
 }
@@ -118,21 +129,28 @@ watch(visible, (value) => {
     :close-on-press-escape="!incomeStore.loading"
   >
     <el-form label-position="top">
-      <el-form-item label="Category" required>
+      <el-form-item
+        label="Category"
+        required
+      >
         <el-select
           v-model="form.category"
+          placeholder="Select category"
           style="width: 100%"
         >
           <el-option
-            v-for="item in categories"
-            :key="item"
-            :label="item"
-            :value="item"
+            v-for="item in INCOME_CATEGORIES"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
           />
         </el-select>
       </el-form-item>
 
-      <el-form-item label="Amount" required>
+      <el-form-item
+        label="Amount"
+        required
+      >
         <el-input-number
           v-model="form.amount"
           :min="0.01"
@@ -142,7 +160,10 @@ watch(visible, (value) => {
         />
       </el-form-item>
 
-      <el-form-item label="Date" required>
+      <el-form-item
+        label="Date"
+        required
+      >
         <el-date-picker
           v-model="form.date"
           type="date"

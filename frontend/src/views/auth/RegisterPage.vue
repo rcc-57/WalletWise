@@ -88,23 +88,35 @@ async function submitRegister() {
   <div class="register-page">
     <div class="register-container">
       <div class="brand-side">
-        <div class="logo">💳</div>
+        <div
+          class="logo"
+          aria-hidden="true"
+        >
+          💳
+        </div>
 
         <h1>WalletWise</h1>
 
-        <p>
-          Smart way to manage<br />
-          your finances
+        <p class="brand-description">
+          Simple and clear money management
+          for a comfortable retirement
         </p>
 
-        <div class="wallet">💰</div>
+        <div
+          class="wallet"
+          aria-hidden="true"
+        >
+          💰
+        </div>
       </div>
 
       <div class="form-side">
         <h2>Create account</h2>
 
         <p class="description">
-          Start managing your money today
+          Keep your pension, benefits,
+          healthcare costs and everyday
+          expenses in one clear place
         </p>
 
         <el-form
@@ -119,6 +131,7 @@ async function submitRegister() {
             <el-input
               v-model="form.username"
               maxlength="50"
+              autocomplete="username"
               placeholder="Choose a username"
             />
           </el-form-item>
@@ -131,6 +144,7 @@ async function submitRegister() {
               v-model="form.password"
               type="password"
               maxlength="72"
+              autocomplete="new-password"
               show-password
               placeholder="Enter a password"
             />
@@ -174,6 +188,7 @@ async function submitRegister() {
           <p
             v-if="authStore.error"
             class="error-text"
+            role="alert"
           >
             {{ authStore.error }}
           </p>
@@ -187,16 +202,18 @@ async function submitRegister() {
 .register-page {
   display: flex;
   min-height: 100vh;
+  padding: 24px;
   justify-content: center;
   align-items: center;
+  box-sizing: border-box;
   background: #f3f5f9;
 }
 
 .register-container {
   display: flex;
   overflow: hidden;
-  width: 900px;
-  min-height: 650px;
+  width: min(920px, 100%);
+  min-height: 670px;
   border-radius: 20px;
   background: white;
   box-shadow: 0 20px 50px
@@ -206,6 +223,8 @@ async function submitRegister() {
 .brand-side {
   display: flex;
   width: 40%;
+  padding: 48px 36px;
+  box-sizing: border-box;
   justify-content: center;
   align-items: center;
   flex-direction: column;
@@ -215,61 +234,108 @@ async function submitRegister() {
 
 .logo {
   display: flex;
-  width: 70px;
-  height: 70px;
+  width: 74px;
+  height: 74px;
   justify-content: center;
   align-items: center;
-  border-radius: 15px;
+  border-radius: 16px;
   background: #2563eb;
-  font-size: 35px;
+  font-size: 38px;
 }
 
 .brand-side h1 {
-  margin-top: 25px;
-  font-size: 34px;
+  margin: 25px 0 12px;
+  font-size: 36px;
+  line-height: 1.2;
 }
 
-.brand-side p {
+.brand-description {
+  max-width: 270px;
+  margin: 0;
   text-align: center;
-  color: #cbd5e1;
-  line-height: 1.5;
+  color: #dbe4f0;
+  font-size: 17px;
+  line-height: 1.6;
 }
 
 .wallet {
-  margin-top: 45px;
-  font-size: 90px;
+  margin-top: 44px;
+  font-size: 86px;
+  line-height: 1;
 }
 
 .form-side {
   width: 60%;
-  padding: 55px 60px;
+  padding: 54px 60px;
+  box-sizing: border-box;
 }
 
 .form-side h2 {
-  margin-bottom: 10px;
-  font-size: 32px;
+  margin: 0 0 10px;
+  color: #172033;
+  font-size: 34px;
+  line-height: 1.25;
 }
 
 .description {
-  margin-bottom: 24px;
-  color: #64748b;
+  margin: 0 0 25px;
+  color: #52627a;
+  font-size: 17px;
+  line-height: 1.6;
 }
 
 .submit-button {
   width: 100%;
+  min-height: 48px;
+  font-size: 17px;
 }
 
 .login {
-  margin-top: 16px;
+  margin-top: 18px;
   text-align: center;
+  color: #52627a;
 }
 
 .login a {
-  color: #2563eb;
+  color: #1d4ed8;
+  text-decoration: none;
+}
+
+.login a:hover {
+  text-decoration: underline;
 }
 
 .error-text {
-  margin-top: 12px;
-  color: #dc2626;
+  margin-top: 14px;
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  .register-page {
+    padding: 16px;
+    align-items: flex-start;
+  }
+
+  .register-container {
+    flex-direction: column;
+  }
+
+  .brand-side,
+  .form-side {
+    width: 100%;
+  }
+
+  .brand-side {
+    padding: 32px 24px;
+  }
+
+  .wallet {
+    display: none;
+  }
+
+  .form-side {
+    padding: 36px 24px;
+  }
 }
 </style>

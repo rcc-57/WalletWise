@@ -126,13 +126,13 @@ const savingsRate = computed(() => {
 const dashboardCards = computed(() => {
   return [
     {
-      title: 'Balance',
+      title: 'Available Balance',
       value: formatMoney(
         statistics.value?.balance || 0,
         currency.value
       ),
       change:
-        'Income minus expenses'
+        'Money remaining after expenses'
     },
     {
       title: 'Income',
@@ -141,7 +141,7 @@ const dashboardCards = computed(() => {
         currency.value
       ),
       change:
-        'Income for selected month'
+        'Pension, benefits and other income'
     },
     {
       title: 'Expenses',
@@ -150,13 +150,13 @@ const dashboardCards = computed(() => {
         currency.value
       ),
       change:
-        'Expenses for selected month'
+        'Healthcare and everyday spending'
     },
     {
       title: 'Savings Rate',
       value: `${savingsRate.value}%`,
       change:
-        'Balance as a share of income'
+        'Share of income remaining'
     }
   ]
 })
@@ -378,11 +378,12 @@ onMounted(() => {
   >
     <div class="page-header">
       <div>
-        <h1>Dashboard</h1>
+        <h1>Your Money Overview</h1>
 
         <p>
-          Review your monthly finances
-          and recent transactions
+          Keep track of your pension,
+          benefits, healthcare costs
+          and everyday spending
         </p>
       </div>
 
@@ -398,7 +399,7 @@ onMounted(() => {
       <el-select
         v-model="selectedYear"
         placeholder="Year"
-        style="width: 140px"
+        style="width: 150px"
         @change="loadDashboard"
       >
         <el-option
@@ -412,7 +413,7 @@ onMounted(() => {
       <el-select
         v-model="selectedMonth"
         placeholder="Month"
-        style="width: 180px"
+        style="width: 190px"
         @change="loadDashboard"
       >
         <el-option
@@ -457,11 +458,11 @@ onMounted(() => {
           <div class="chart-header">
             <div>
               <h2>
-                Daily Cash Flow
+                Daily Income and Spending
               </h2>
 
               <p>
-                Income and expenses by day
+                See how money changed each day
               </p>
             </div>
           </div>
@@ -486,7 +487,7 @@ onMounted(() => {
               </h2>
 
               <p>
-                Monthly spending distribution
+                See where your money was spent
               </p>
             </div>
           </div>
@@ -518,29 +519,33 @@ onMounted(() => {
 
 .page-header {
   display: flex;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
   justify-content: space-between;
   align-items: center;
+  gap: 20px;
 }
 
 .page-header h1 {
-  margin: 0 0 6px;
-  color: #111827;
+  margin: 0 0 8px;
+  color: #172033;
   font-size: 36px;
+  line-height: 1.25;
 }
 
 .page-header p {
+  max-width: 680px;
   margin: 0;
-  color: #64748b;
-  font-size: 14px;
+  color: #52627a;
+  font-size: 17px;
+  line-height: 1.6;
 }
 
 .filters-bar {
   display: flex;
-  margin-bottom: 20px;
-  padding: 16px;
+  margin-bottom: 22px;
+  padding: 18px;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 14px;
   border-radius: 18px;
   background: white;
   box-shadow: 0 10px 30px
@@ -573,7 +578,8 @@ onMounted(() => {
 
 .chart-box {
   min-height: 410px;
-  padding: 25px;
+  padding: 26px;
+  border: 1px solid #e5eaf1;
   border-radius: 20px;
   background: white;
   box-shadow: 0 10px 25px
@@ -581,19 +587,21 @@ onMounted(() => {
 }
 
 .chart-header {
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .chart-header h2 {
-  margin: 0 0 5px;
-  color: #111827;
-  font-size: 22px;
+  margin: 0 0 6px;
+  color: #172033;
+  font-size: 23px;
+  line-height: 1.35;
 }
 
 .chart-header p {
   margin: 0;
-  color: #64748b;
-  font-size: 13px;
+  color: #52627a;
+  font-size: 16px;
+  line-height: 1.5;
 }
 
 @media (max-width: 1200px) {
@@ -614,7 +622,6 @@ onMounted(() => {
   .page-header {
     align-items: flex-start;
     flex-direction: column;
-    gap: 12px;
   }
 }
 </style>

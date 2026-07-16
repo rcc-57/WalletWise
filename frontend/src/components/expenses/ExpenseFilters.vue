@@ -1,16 +1,18 @@
 <script setup>
-import {
-  ref,
-  watch
-} from 'vue'
+import { ref, watch } from 'vue'
 
 import {
   Plus,
   Search
 } from '@element-plus/icons-vue'
 
+import {
+  ALL_CATEGORY_VALUE,
+  EXPENSE_CATEGORIES
+} from '@/constants/categories'
+
 const search = ref('')
-const category = ref('All')
+const category = ref(ALL_CATEGORY_VALUE)
 const sort = ref('newest')
 
 const emit = defineEmits([
@@ -19,15 +21,11 @@ const emit = defineEmits([
 ])
 
 const categories = [
-  'All',
-  'Food',
-  'Transport',
-  'Shopping',
-  'Housing',
-  'Health',
-  'Education',
-  'Entertainment',
-  'Other'
+  {
+    label: 'All Categories',
+    value: ALL_CATEGORY_VALUE
+  },
+  ...EXPENSE_CATEGORIES
 ]
 
 watch(
@@ -65,9 +63,9 @@ watch(
       >
         <el-option
           v-for="item in categories"
-          :key="item"
-          :label="item"
-          :value="item"
+          :key="item.value"
+          :label="item.label"
+          :value="item.value"
         />
       </el-select>
 
@@ -133,7 +131,7 @@ watch(
 }
 
 .select {
-  width: 180px;
+  width: 190px;
 }
 
 .button-icon {

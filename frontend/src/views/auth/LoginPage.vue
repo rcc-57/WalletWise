@@ -58,23 +58,34 @@ async function submitLogin() {
   <div class="login-page">
     <div class="login-container">
       <div class="brand-side">
-        <div class="logo">💳</div>
+        <div
+          class="logo"
+          aria-hidden="true"
+        >
+          💳
+        </div>
 
         <h1>WalletWise</h1>
 
-        <p>
-          Smart way to manage<br />
-          your finances
+        <p class="brand-description">
+          Simple and clear money management
+          for a comfortable retirement
         </p>
 
-        <div class="wallet">💰</div>
+        <div
+          class="wallet"
+          aria-hidden="true"
+        >
+          💰
+        </div>
       </div>
 
       <div class="form-side">
-        <h2>Welcome back 👋</h2>
+        <h2>Welcome back</h2>
 
         <p class="description">
-          Sign in to continue to your account
+          Sign in to review your income,
+          everyday spending and savings
         </p>
 
         <el-form
@@ -88,6 +99,7 @@ async function submitLogin() {
           >
             <el-input
               v-model="form.username"
+              autocomplete="username"
               placeholder="Enter your username"
             />
           </el-form-item>
@@ -99,6 +111,7 @@ async function submitLogin() {
             <el-input
               v-model="form.password"
               type="password"
+              autocomplete="current-password"
               show-password
               placeholder="Enter your password"
             />
@@ -124,6 +137,7 @@ async function submitLogin() {
           <p
             v-if="authStore.error"
             class="error-text"
+            role="alert"
           >
             {{ authStore.error }}
           </p>
@@ -137,16 +151,18 @@ async function submitLogin() {
 .login-page {
   display: flex;
   min-height: 100vh;
+  padding: 24px;
   justify-content: center;
   align-items: center;
+  box-sizing: border-box;
   background: #f3f5f9;
 }
 
 .login-container {
   display: flex;
   overflow: hidden;
-  width: 900px;
-  min-height: 560px;
+  width: min(920px, 100%);
+  min-height: 580px;
   border-radius: 20px;
   background: white;
   box-shadow: 0 20px 50px
@@ -156,6 +172,8 @@ async function submitLogin() {
 .brand-side {
   display: flex;
   width: 40%;
+  padding: 48px 36px;
+  box-sizing: border-box;
   justify-content: center;
   align-items: center;
   flex-direction: column;
@@ -165,66 +183,118 @@ async function submitLogin() {
 
 .logo {
   display: flex;
-  width: 70px;
-  height: 70px;
+  width: 74px;
+  height: 74px;
   justify-content: center;
   align-items: center;
-  border-radius: 15px;
+  border-radius: 16px;
   background: #2563eb;
-  font-size: 35px;
+  font-size: 38px;
 }
 
 .brand-side h1 {
-  margin-top: 25px;
-  font-size: 34px;
+  margin: 25px 0 12px;
+  font-size: 36px;
+  line-height: 1.2;
 }
 
-.brand-side p {
+.brand-description {
+  max-width: 270px;
+  margin: 0;
   text-align: center;
-  color: #cbd5e1;
-  line-height: 1.5;
+  color: #dbe4f0;
+  font-size: 17px;
+  line-height: 1.6;
 }
 
 .wallet {
-  margin-top: 60px;
-  font-size: 100px;
+  margin-top: 48px;
+  font-size: 90px;
+  line-height: 1;
 }
 
 .form-side {
   width: 60%;
   padding: 70px;
+  box-sizing: border-box;
 }
 
 .form-side h2 {
-  margin-bottom: 10px;
-  font-size: 32px;
+  margin: 0 0 10px;
+  color: #172033;
+  font-size: 34px;
+  line-height: 1.25;
 }
 
 .description {
-  margin-bottom: 24px;
-  color: #64748b;
+  margin: 0 0 28px;
+  color: #52627a;
+  font-size: 17px;
+  line-height: 1.6;
 }
 
 .register-link {
   display: flex;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
   justify-content: space-between;
   align-items: center;
-  color: #64748b;
-  font-size: 14px;
+  gap: 16px;
+  color: #52627a;
+  font-size: 15px;
 }
 
 .register-link a {
-  color: #2563eb;
+  color: #1d4ed8;
   text-decoration: none;
+}
+
+.register-link a:hover {
+  text-decoration: underline;
 }
 
 .submit-button {
   width: 100%;
+  min-height: 48px;
+  font-size: 17px;
 }
 
 .error-text {
-  margin-top: 12px;
-  color: #dc2626;
+  margin-top: 14px;
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  .login-page {
+    padding: 16px;
+    align-items: flex-start;
+  }
+
+  .login-container {
+    flex-direction: column;
+  }
+
+  .brand-side,
+  .form-side {
+    width: 100%;
+  }
+
+  .brand-side {
+    padding: 32px 24px;
+  }
+
+  .wallet {
+    display: none;
+  }
+
+  .form-side {
+    padding: 36px 24px;
+  }
+
+  .register-link {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
 }
 </style>
