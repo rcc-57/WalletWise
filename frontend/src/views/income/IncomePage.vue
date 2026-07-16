@@ -18,6 +18,10 @@ import EditIncomeModal from '@/components/income/EditIncomeModal.vue'
 
 import { useIncomeStore } from '@/stores/income'
 
+import {
+  ALL_CATEGORY_VALUE
+} from '@/constants/categories'
+
 const incomeStore = useIncomeStore()
 
 const showAddModal = ref(false)
@@ -25,22 +29,52 @@ const showEditModal = ref(false)
 
 const filters = ref({
   search: '',
-  category: 'All',
+  category: ALL_CATEGORY_VALUE,
   sort: 'newest'
 })
 
-const filteredIncome = computed(() => {
-  let list = [...incomeStore.income]
+function normalizeCategory(category) {
+  return String(category || '')
+    .trim()
+    .toUpperCase()
+    .replace(/&/g, ' AND ')
+    .replace(/[^A-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+}
 
-  const searchTerm = filters.value.search
+function formatCategoryForSearch(category) {
+  return String(category || '')
+    .trim()
+    .replace(/_/g, ' ')
+    .replace(/\s+/g, ' ')
+    .toLowerCase()
+}
+
+const filteredIncome = computed(() => {
+  let list = [
+    ...incomeStore.income
+  ]
+
+  const searchTerm = String(
+    filters.value.search || ''
+  )
     .trim()
     .toLowerCase()
 
   if (searchTerm) {
     list = list.filter((item) => {
-      const category = String(item.category || '').toLowerCase()
-      const remark = String(item.remark || '').toLowerCase()
-      const date = String(item.date || '').toLowerCase()
+      const category =
+        formatCategoryForSearch(
+          item.category
+        )
+
+      const remark = String(
+        item.remark || ''
+      ).toLowerCase()
+
+      const date = String(
+        item.date || ''
+      ).toLowerCase()
 
       return (
         category.includes(searchTerm) ||
@@ -50,30 +84,68 @@ const filteredIncome = computed(() => {
     })
   }
 
+  const selectedCategory =
+    normalizeCategory(
+      filters.value.category
+    )
+
   if (
     filters.value.category &&
-    filters.value.category !== 'All'
+    filters.value.category !==
+      ALL_CATEGORY_VALUE
   ) {
-    list = list.filter(
-      (item) => item.category === filters.value.category
-    )
+    list = list.filter((item) => {
+      const itemCategory =
+        normalizeCategory(
+          item.category
+        )
+
+      return (
+        itemCategory ===
+        selectedCategory
+      )
+    })
   }
 
   list.sort((first, second) => {
-    if (filters.value.sort === 'newest') {
-      return new Date(second.date) - new Date(first.date)
+    if (
+      filters.value.sort ===
+      'newest'
+    ) {
+      return (
+        new Date(second.date) -
+        new Date(first.date)
+      )
     }
 
-    if (filters.value.sort === 'oldest') {
-      return new Date(first.date) - new Date(second.date)
+    if (
+      filters.value.sort ===
+      'oldest'
+    ) {
+      return (
+        new Date(first.date) -
+        new Date(second.date)
+      )
     }
 
-    if (filters.value.sort === 'highest') {
-      return Number(second.amount) - Number(first.amount)
+    if (
+      filters.value.sort ===
+      'highest'
+    ) {
+      return (
+        Number(second.amount) -
+        Number(first.amount)
+      )
     }
 
-    if (filters.value.sort === 'lowest') {
-      return Number(first.amount) - Number(second.amount)
+    if (
+      filters.value.sort ===
+      'lowest'
+    ) {
+      return (
+        Number(first.amount) -
+        Number(second.amount)
+      )
     }
 
     return 0
@@ -87,13 +159,24 @@ async function loadIncome() {
     await incomeStore.fetchIncome()
   } catch {
     ElMessage.error(
-      incomeStore.error || 'Unable to load income records.'
+      incomeStore.error ||
+        'Unable to load income records.'
     )
   }
 }
 
 function onFilterChange(payload) {
-  filters.value = payload
+  filters.value = {
+    search:
+      payload?.search || '',
+
+    category:
+      payload?.category ||
+      ALL_CATEGORY_VALUE,
+
+    sort:
+      payload?.sort || 'newest'
+  }
 }
 
 function onEditIncome(income) {
@@ -115,11 +198,17 @@ async function onDeleteIncome(id) {
 
     await incomeStore.deleteIncome(id)
 
-    ElMessage.success('Income record deleted.')
+    ElMessage.success(
+      'Income record deleted.'
+    )
   } catch (error) {
-    if (error !== 'cancel' && error !== 'close') {
+    if (
+      error !== 'cancel' &&
+      error !== 'close'
+    ) {
       ElMessage.error(
-        incomeStore.error || 'Unable to delete the income record.'
+        incomeStore.error ||
+          'Unable to delete the income record.'
       )
     }
   }
@@ -141,7 +230,11 @@ onMounted(() => {
     <div class="page-header">
       <div>
         <h1>Income</h1>
-        <p>Track recurring and one-off earnings clearly</p>
+
+        <p>
+          Track your pension, benefits,
+          family support and other income
+        </p>
       </div>
 
       <el-button
@@ -173,8 +266,13 @@ onMounted(() => {
       />
     </div>
 
-    <AddIncomeModal v-model="showAddModal" />
-    <EditIncomeModal v-model="showEditModal" />
+    <AddIncomeModal
+      v-model="showAddModal"
+    />
+
+    <EditIncomeModal
+      v-model="showEditModal"
+    />
   </div>
 </template>
 
@@ -189,18 +287,27 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 20px;
 }
 
 .page-header h1 {
   margin: 0 0 6px;
-  color: #111827;
-  font-size: 32px;
+  color: #172033;
+  font-size: 34px;
   font-weight: 700;
 }
 
 .page-header p {
   margin: 0;
-  color: #64748b;
-  font-size: 14px;
+  color: #52627a;
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+@media (max-width: 700px) {
+  .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 </style>

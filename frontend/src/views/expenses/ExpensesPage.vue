@@ -18,6 +18,10 @@ import EditExpenseModal from '@/components/expenses/EditExpenseModal.vue'
 
 import { useExpensesStore } from '@/stores/expenses'
 
+import {
+  ALL_CATEGORY_VALUE
+} from '@/constants/categories'
+
 const expensesStore = useExpensesStore()
 
 const showAddModal = ref(false)
@@ -25,22 +29,65 @@ const showEditModal = ref(false)
 
 const filters = ref({
   search: '',
-  category: 'All',
+  category: ALL_CATEGORY_VALUE,
   sort: 'newest'
 })
 
-const filteredExpenses = computed(() => {
-  let list = [...expensesStore.expenses]
+function normalizeCategory(category) {
+  const normalized = String(
+    category || ''
+  )
+    .trim()
+    .toUpperCase()
+    .replace(/&/g, ' AND ')
+    .replace(/[^A-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
 
-  const searchTerm = filters.value.search
+  // The displayed label is "Family and Gifts",
+  // while the database code is FAMILY_GIFTS.
+  if (
+    normalized ===
+    'FAMILY_AND_GIFTS'
+  ) {
+    return 'FAMILY_GIFTS'
+  }
+
+  return normalized
+}
+
+function formatCategoryForSearch(category) {
+  return String(category || '')
+    .trim()
+    .replace(/_/g, ' ')
+    .replace(/\s+/g, ' ')
+    .toLowerCase()
+}
+
+const filteredExpenses = computed(() => {
+  let list = [
+    ...expensesStore.expenses
+  ]
+
+  const searchTerm = String(
+    filters.value.search || ''
+  )
     .trim()
     .toLowerCase()
 
   if (searchTerm) {
     list = list.filter((item) => {
-      const category = String(item.category || '').toLowerCase()
-      const remark = String(item.remark || '').toLowerCase()
-      const date = String(item.date || '').toLowerCase()
+      const category =
+        formatCategoryForSearch(
+          item.category
+        )
+
+      const remark = String(
+        item.remark || ''
+      ).toLowerCase()
+
+      const date = String(
+        item.date || ''
+      ).toLowerCase()
 
       return (
         category.includes(searchTerm) ||
@@ -50,30 +97,68 @@ const filteredExpenses = computed(() => {
     })
   }
 
+  const selectedCategory =
+    normalizeCategory(
+      filters.value.category
+    )
+
   if (
     filters.value.category &&
-    filters.value.category !== 'All'
+    filters.value.category !==
+      ALL_CATEGORY_VALUE
   ) {
-    list = list.filter(
-      (item) => item.category === filters.value.category
-    )
+    list = list.filter((item) => {
+      const itemCategory =
+        normalizeCategory(
+          item.category
+        )
+
+      return (
+        itemCategory ===
+        selectedCategory
+      )
+    })
   }
 
   list.sort((first, second) => {
-    if (filters.value.sort === 'newest') {
-      return new Date(second.date) - new Date(first.date)
+    if (
+      filters.value.sort ===
+      'newest'
+    ) {
+      return (
+        new Date(second.date) -
+        new Date(first.date)
+      )
     }
 
-    if (filters.value.sort === 'oldest') {
-      return new Date(first.date) - new Date(second.date)
+    if (
+      filters.value.sort ===
+      'oldest'
+    ) {
+      return (
+        new Date(first.date) -
+        new Date(second.date)
+      )
     }
 
-    if (filters.value.sort === 'highest') {
-      return Number(second.amount) - Number(first.amount)
+    if (
+      filters.value.sort ===
+      'highest'
+    ) {
+      return (
+        Number(second.amount) -
+        Number(first.amount)
+      )
     }
 
-    if (filters.value.sort === 'lowest') {
-      return Number(first.amount) - Number(second.amount)
+    if (
+      filters.value.sort ===
+      'lowest'
+    ) {
+      return (
+        Number(first.amount) -
+        Number(second.amount)
+      )
     }
 
     return 0
@@ -87,13 +172,24 @@ async function loadExpenses() {
     await expensesStore.fetchExpenses()
   } catch {
     ElMessage.error(
-      expensesStore.error || 'Unable to load expense records.'
+      expensesStore.error ||
+        'Unable to load expense records.'
     )
   }
 }
 
 function onFilterChange(payload) {
-  filters.value = payload
+  filters.value = {
+    search:
+      payload?.search || '',
+
+    category:
+      payload?.category ||
+      ALL_CATEGORY_VALUE,
+
+    sort:
+      payload?.sort || 'newest'
+  }
 }
 
 function onEditExpense(expense) {
@@ -115,11 +211,17 @@ async function onDeleteExpense(id) {
 
     await expensesStore.deleteExpense(id)
 
-    ElMessage.success('Expense deleted.')
+    ElMessage.success(
+      'Expense deleted.'
+    )
   } catch (error) {
-    if (error !== 'cancel' && error !== 'close') {
+    if (
+      error !== 'cancel' &&
+      error !== 'close'
+    ) {
       ElMessage.error(
-        expensesStore.error || 'Unable to delete the expense.'
+        expensesStore.error ||
+          'Unable to delete the expense.'
       )
     }
   }
@@ -141,7 +243,11 @@ onMounted(() => {
     <div class="page-header">
       <div>
         <h1>Expenses</h1>
-        <p>Track and manage every outgoing payment</p>
+
+        <p>
+          Track groceries, medicine,
+          healthcare and everyday spending
+        </p>
       </div>
 
       <el-button
@@ -173,8 +279,13 @@ onMounted(() => {
       />
     </div>
 
-    <AddExpenseModal v-model="showAddModal" />
-    <EditExpenseModal v-model="showEditModal" />
+    <AddExpenseModal
+      v-model="showAddModal"
+    />
+
+    <EditExpenseModal
+      v-model="showEditModal"
+    />
   </div>
 </template>
 
@@ -189,18 +300,27 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 20px;
 }
 
 .page-header h1 {
   margin: 0 0 6px;
-  color: #111827;
-  font-size: 32px;
+  color: #172033;
+  font-size: 34px;
   font-weight: 700;
 }
 
 .page-header p {
   margin: 0;
-  color: #64748b;
-  font-size: 14px;
+  color: #52627a;
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+@media (max-width: 700px) {
+  .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 </style>
