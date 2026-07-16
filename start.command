@@ -1,412 +1,324 @@
 #!/bin/bash
 
-set -u
+set -Eeuo pipefail
 
-PROJECT_ROOT="$(
-  cd "$(dirname "$0")" &&
-  pwd
-)"
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+BACKEND_DIR="$ROOT_DIR/backend"
+FRONTEND_DIR="$ROOT_DIR/frontend"
+DATABASE_DIR="$ROOT_DIR/database"
+LOG_DIR="$ROOT_DIR/logs"
 
-BACKEND_DIR="$PROJECT_ROOT/backend"
-FRONTEND_DIR="$PROJECT_ROOT/frontend"
-DATABASE_DIR="$PROJECT_ROOT/database"
-
-BACKEND_CONFIG="$BACKEND_DIR/src/main/resources/application-local.properties"
-BACKEND_JAR="$BACKEND_DIR/target/backend-0.0.1-SNAPSHOT.jar"
+CONFIG_FILE="$BACKEND_DIR/src/main/resources/application-local.properties"
+EXAMPLE_CONFIG="$BACKEND_DIR/src/main/resources/application-local.example.properties"
 INIT_SQL="$DATABASE_DIR/init.sql"
-
-RUN_DIR="/tmp/walletwise-run"
-BACKEND_LOG="$RUN_DIR/backend.log"
-FRONTEND_LOG="$RUN_DIR/frontend.log"
 
 BACKEND_PID=""
 FRONTEND_PID=""
 
-function pause_before_exit() {
+mkdir -p "$LOG_DIR"
+
+print_step() {
   echo
-  read -r -p "Press Enter to close this window..."
+  echo "============================================================"
+  echo "$1"
+  echo "============================================================"
 }
 
-function fail() {
+stop_processes() {
+  echo
+  echo "Stopping WalletWise..."
+
+  if [ -n "$FRONTEND_PID" ] && kill -0 "$FRONTEND_PID" 2>/dev/null; then
+    kill "$FRONTEND_PID" 2>/dev/null || true
+  fi
+
+  if [ -n "$BACKEND_PID" ] && kill -0 "$BACKEND_PID" 2>/dev/null; then
+    kill "$BACKEND_PID" 2>/dev/null || true
+  fi
+}
+
+finish_with_error() {
   echo
   echo "ERROR: $1"
   echo
-
-  pause_before_exit
+  read -r -p "Press Enter to close..."
   exit 1
 }
 
-function cleanup() {
-  if [ -n "$FRONTEND_PID" ]; then
-    kill "$FRONTEND_PID" \
-      2>/dev/null || true
-  fi
+trap stop_processes EXIT INT TERM
 
-  if [ -n "$BACKEND_PID" ]; then
-    kill "$BACKEND_PID" \
-      2>/dev/null || true
-  fi
+get_property() {
+  local property_name="$1"
+  local file_name="$2"
 
-  if [ -n "$FRONTEND_PID" ]; then
-    wait "$FRONTEND_PID" \
-      2>/dev/null || true
-  fi
-
-  if [ -n "$BACKEND_PID" ]; then
-    wait "$BACKEND_PID" \
-      2>/dev/null || true
-  fi
+  awk -v key="$property_name" '
+    index($0, key "=") == 1 {
+      sub("^[^=]*=", "")
+      print
+      exit
+    }
+  ' "$file_name"
 }
 
-trap cleanup EXIT
-trap 'exit 130' INT TERM
+create_local_config() {
+  print_step "First-time local configuration"
 
-mkdir -p "$RUN_DIR"
+  echo "The MySQL password will be stored only on this computer."
+  echo "The local configuration file is excluded from Git."
+  echo
 
-echo
-echo "======================================"
-echo "         WalletWise Launcher"
-echo "======================================"
-echo
+  read -r -p "MySQL username [root]: " DB_USERNAME
+  DB_USERNAME="${DB_USERNAME:-root}"
 
-command -v java >/dev/null 2>&1 ||
-  fail "Java is not installed."
+  read -r -s -p "MySQL password: " DB_PASSWORD
+  echo
 
-command -v node >/dev/null 2>&1 ||
-  fail "Node.js is not installed."
+  if [ -z "$DB_PASSWORD" ]; then
+    finish_with_error "MySQL password cannot be empty."
+  fi
 
-command -v npm >/dev/null 2>&1 ||
-  fail "npm is not installed."
+  if ! command -v openssl >/dev/null 2>&1; then
+    finish_with_error "OpenSSL is required to generate the JWT secret."
+  fi
 
-command -v curl >/dev/null 2>&1 ||
-  fail "curl is not available."
+  JWT_SECRET="$(openssl rand -base64 32 | tr -d '\n')"
 
-command -v nc >/dev/null 2>&1 ||
-  fail "The nc command is not available."
+  cat > "$CONFIG_FILE" <<EOF
+spring.datasource.url=jdbc:mysql://localhost:3306/online_bookkeeping?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+spring.datasource.username=$DB_USERNAME
+spring.datasource.password=$DB_PASSWORD
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 
-if [ ! -f "$BACKEND_CONFIG" ]; then
-  fail "application-local.properties was not found."
+jwt.secret=$JWT_SECRET
+EOF
+
+  chmod 600 "$CONFIG_FILE"
+
+  echo
+  echo "Local configuration created:"
+  echo "$CONFIG_FILE"
+}
+
+if [ ! -d "$BACKEND_DIR" ] ||
+   [ ! -d "$FRONTEND_DIR" ] ||
+   [ ! -f "$INIT_SQL" ]; then
+  finish_with_error "Run this file from the WalletWise project directory."
 fi
 
-if [ ! -f "$INIT_SQL" ]; then
-  fail "database/init.sql was not found."
+if [ ! -f "$CONFIG_FILE" ]; then
+  create_local_config
 fi
 
-if grep -Eq \
-  "YOUR_PASSWORD|YOUR_MYSQL_PASSWORD|GENERATE_WITH_OPENSSL|YOUR_GENERATED_JWT_SECRET" \
-  "$BACKEND_CONFIG"; then
-
-  fail "Replace placeholders in application-local.properties."
-fi
-
-DB_USERNAME="$(
-  sed -n \
-    's/^spring.datasource.username=//p' \
-    "$BACKEND_CONFIG" |
-  tail -n 1 |
-  tr -d '\r'
-)"
-
-DB_PASSWORD="$(
-  sed -n \
-    's/^spring.datasource.password=//p' \
-    "$BACKEND_CONFIG" |
-  tail -n 1 |
-  tr -d '\r'
-)"
+DB_USERNAME="$(get_property "spring.datasource.username" "$CONFIG_FILE")"
+DB_PASSWORD="$(get_property "spring.datasource.password" "$CONFIG_FILE")"
 
 if [ -z "$DB_USERNAME" ]; then
-  fail "Database username is missing in application-local.properties."
+  finish_with_error "spring.datasource.username is missing in application-local.properties."
 fi
 
-if [ -z "$DB_PASSWORD" ]; then
-  fail "Database password is missing in application-local.properties."
+if [ -z "$DB_PASSWORD" ] ||
+   [ "$DB_PASSWORD" = "YOUR_MYSQL_PASSWORD" ] ||
+   [ "$DB_PASSWORD" = "YOUR_PASSWORD" ]; then
+  finish_with_error "Set a real MySQL password in application-local.properties."
 fi
 
-MYSQL_COMMAND="$(
-  command -v mysql 2>/dev/null ||
-  true
-)"
+print_step "Checking required software"
 
-if [ -z "$MYSQL_COMMAND" ]; then
-  for candidate in \
-    "/usr/local/mysql/bin/mysql" \
-    "/opt/homebrew/bin/mysql" \
-    "/usr/local/bin/mysql"
-  do
-    if [ -x "$candidate" ]; then
-      MYSQL_COMMAND="$candidate"
-      break
-    fi
-  done
+command -v java >/dev/null 2>&1 ||
+  finish_with_error "Java 17 is not installed or is not available in PATH."
+
+command -v node >/dev/null 2>&1 ||
+  finish_with_error "Node.js is not installed or is not available in PATH."
+
+command -v npm >/dev/null 2>&1 ||
+  finish_with_error "npm is not installed or is not available in PATH."
+
+command -v curl >/dev/null 2>&1 ||
+  finish_with_error "curl is not installed or is not available in PATH."
+
+MYSQL_BIN=""
+
+if command -v mysql >/dev/null 2>&1; then
+  MYSQL_BIN="$(command -v mysql)"
+elif [ -x "/usr/local/mysql/bin/mysql" ]; then
+  MYSQL_BIN="/usr/local/mysql/bin/mysql"
+elif [ -x "/opt/homebrew/bin/mysql" ]; then
+  MYSQL_BIN="/opt/homebrew/bin/mysql"
+elif [ -x "/usr/local/bin/mysql" ]; then
+  MYSQL_BIN="/usr/local/bin/mysql"
+else
+  finish_with_error "MySQL command-line client was not found."
 fi
 
-if [ -z "$MYSQL_COMMAND" ]; then
-  fail "MySQL command-line client was not found."
-fi
+echo "Java: $(java -version 2>&1 | head -n 1)"
+echo "Node.js: $(node --version)"
+echo "npm: $(npm --version)"
+echo "MySQL client: $MYSQL_BIN"
 
-echo "Checking MySQL server..."
+print_step "Checking MySQL"
 
-if ! nc -z \
-  127.0.0.1 \
-  3306 \
-  >/dev/null 2>&1; then
-
-  fail "MySQL is not running. Start it in macOS settings."
-fi
-
-if ! MYSQL_PWD="$DB_PASSWORD" \
-  "$MYSQL_COMMAND" \
-  --host=127.0.0.1 \
-  --port=3306 \
-  --user="$DB_USERNAME" \
-  --execute="SELECT 1;" \
-  >/dev/null 2>&1; then
-
-  fail "Cannot connect to MySQL. Check the username and password."
-fi
-
-echo "MySQL connection successful."
-
-DATABASE_EXISTS="$(
-  MYSQL_PWD="$DB_PASSWORD" \
-  "$MYSQL_COMMAND" \
+if ! MYSQL_PWD="$DB_PASSWORD" "$MYSQL_BIN" \
   --host=127.0.0.1 \
   --port=3306 \
   --user="$DB_USERNAME" \
   --batch \
   --skip-column-names \
-  --execute="
-    SELECT COUNT(*)
-    FROM INFORMATION_SCHEMA.SCHEMATA
-    WHERE SCHEMA_NAME = 'online_bookkeeping';
-  "
-)"
+  -e "SELECT 1;" >/dev/null 2>&1; then
+  finish_with_error "Cannot connect to MySQL. Start MySQL and check the local password."
+fi
 
-if [ "$DATABASE_EXISTS" = "0" ]; then
-  echo
-  echo "Database does not exist."
-  echo "Creating clean online_bookkeeping database..."
-
-  if ! MYSQL_PWD="$DB_PASSWORD" \
-    "$MYSQL_COMMAND" \
+DATABASE_EXISTS="$(
+  MYSQL_PWD="$DB_PASSWORD" "$MYSQL_BIN" \
     --host=127.0.0.1 \
     --port=3306 \
     --user="$DB_USERNAME" \
-    < "$INIT_SQL"; then
+    --batch \
+    --skip-column-names \
+    -e "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = 'online_bookkeeping';"
+)"
 
-    fail "Database initialization failed."
+if [ "$DATABASE_EXISTS" != "online_bookkeeping" ]; then
+  echo "Database not found. Running database/init.sql..."
+
+  MYSQL_PWD="$DB_PASSWORD" "$MYSQL_BIN" \
+    --host=127.0.0.1 \
+    --port=3306 \
+    --user="$DB_USERNAME" < "$INIT_SQL"
+
+  echo "Database online_bookkeeping created."
+else
+  echo "Database online_bookkeeping already exists."
+  echo "Existing users and bills will be preserved."
+fi
+
+SCHEMA_CHECK="$(
+  MYSQL_PWD="$DB_PASSWORD" "$MYSQL_BIN" \
+    --host=127.0.0.1 \
+    --port=3306 \
+    --user="$DB_USERNAME" \
+    --batch \
+    --skip-column-names \
+    -e "
+      SELECT COUNT(*)
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = 'online_bookkeeping'
+        AND TABLE_NAME = 'users'
+        AND COLUMN_NAME IN ('email', 'currency');
+    "
+)"
+
+if [ "$SCHEMA_CHECK" != "2" ]; then
+  finish_with_error "The database has an old structure. Recreate it with the current database/init.sql."
+fi
+
+if command -v lsof >/dev/null 2>&1; then
+  if lsof -ti tcp:8080 >/dev/null 2>&1; then
+    finish_with_error "Port 8080 is already in use."
   fi
 
-  echo "Database created successfully."
-else
-  echo "Database already exists. Existing data will be preserved."
+  if lsof -ti tcp:5173 >/dev/null 2>&1; then
+    finish_with_error "Port 5173 is already in use."
+  fi
 fi
 
-TABLE_COUNT="$(
-  MYSQL_PWD="$DB_PASSWORD" \
-  "$MYSQL_COMMAND" \
-  --host=127.0.0.1 \
-  --port=3306 \
-  --user="$DB_USERNAME" \
-  --batch \
-  --skip-column-names \
-  --execute="
-    SELECT COUNT(*)
-    FROM INFORMATION_SCHEMA.TABLES
-    WHERE TABLE_SCHEMA = 'online_bookkeeping'
-      AND TABLE_NAME IN ('users', 'bills');
-  "
+print_step "Installing and building frontend"
+
+cd "$FRONTEND_DIR"
+npm install --no-audit --no-fund
+npm run build
+
+print_step "Building backend"
+
+cd "$BACKEND_DIR"
+chmod +x ./mvnw
+./mvnw -DskipTests package
+
+BACKEND_JAR="$(
+  find "$BACKEND_DIR/target" \
+    -maxdepth 1 \
+    -type f \
+    -name "*.jar" \
+    ! -name "*.original" \
+    | head -n 1
 )"
 
-if [ "$TABLE_COUNT" != "2" ]; then
-  fail "Database exists, but required tables are missing."
+if [ -z "$BACKEND_JAR" ]; then
+  finish_with_error "Backend JAR file was not created."
 fi
 
-PROFILE_COLUMN_COUNT="$(
-  MYSQL_PWD="$DB_PASSWORD" \
-  "$MYSQL_COMMAND" \
-  --host=127.0.0.1 \
-  --port=3306 \
-  --user="$DB_USERNAME" \
-  --batch \
-  --skip-column-names \
-  --execute="
-    SELECT COUNT(*)
-    FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE TABLE_SCHEMA = 'online_bookkeeping'
-      AND TABLE_NAME = 'users'
-      AND COLUMN_NAME IN ('email', 'currency');
-  "
-)"
+print_step "Starting backend"
 
-if [ "$PROFILE_COLUMN_COUNT" != "2" ]; then
-  fail "The users table has an outdated structure. Reset the database."
-fi
-
-echo "Database structure verified."
-
-if lsof -tiTCP:8080 \
-  -sTCP:LISTEN \
-  >/dev/null 2>&1; then
-
-  fail "Port 8080 is already in use."
-fi
-
-if lsof -tiTCP:5173 \
-  -sTCP:LISTEN \
-  >/dev/null 2>&1; then
-
-  fail "Port 5173 is already in use."
-fi
-
-echo
-echo "Installing frontend dependencies..."
-
-cd "$FRONTEND_DIR" ||
-  fail "Frontend directory was not found."
-
-npm install \
-  --no-audit \
-  --no-fund ||
-  fail "Frontend dependency installation failed."
-
-echo
-echo "Building frontend..."
-
-npm run build ||
-  fail "Frontend build failed."
-
-echo
-echo "Building backend..."
-
-cd "$BACKEND_DIR" ||
-  fail "Backend directory was not found."
-
-chmod +x "$BACKEND_DIR/mvnw"
-
-./mvnw \
-  -DskipTests \
-  package ||
-  fail "Backend build failed."
-
-if [ ! -f "$BACKEND_JAR" ]; then
-  fail "Backend JAR file was not created."
-fi
-
-echo
-echo "Starting backend..."
-
+cd "$BACKEND_DIR"
 java -jar "$BACKEND_JAR" \
-  >"$BACKEND_LOG" 2>&1 &
+  > "$LOG_DIR/backend.log" \
+  2>&1 &
 
 BACKEND_PID=$!
 
 BACKEND_READY=false
 
-for attempt in $(seq 1 60); do
-  if curl -fsS \
-    "http://localhost:8080/api/health" \
-    >/dev/null 2>&1; then
-
+for _ in $(seq 1 60); do
+  if curl -fsS "http://localhost:8080/api/health" >/dev/null 2>&1; then
     BACKEND_READY=true
     break
   fi
 
-  if ! kill -0 \
-    "$BACKEND_PID" \
-    2>/dev/null; then
-
+  if ! kill -0 "$BACKEND_PID" 2>/dev/null; then
     echo
-    echo "Backend stopped unexpectedly."
-    echo
-    tail -n 50 "$BACKEND_LOG"
-
-    fail "Backend startup failed."
+    tail -n 50 "$LOG_DIR/backend.log" || true
+    finish_with_error "Backend stopped during startup."
   fi
 
   sleep 1
 done
 
-if [ "$BACKEND_READY" != true ]; then
+if [ "$BACKEND_READY" != "true" ]; then
   echo
-  tail -n 50 "$BACKEND_LOG"
-
-  fail "Backend did not start within 60 seconds."
+  tail -n 50 "$LOG_DIR/backend.log" || true
+  finish_with_error "Backend did not become ready in 60 seconds."
 fi
 
-echo "Backend started:"
-echo "http://localhost:8080"
+echo "Backend is available at http://localhost:8080"
 
-echo
-echo "Starting frontend..."
+print_step "Starting frontend"
 
-cd "$FRONTEND_DIR" ||
-  fail "Frontend directory was not found."
-
-npm run preview -- \
-  --host 127.0.0.1 \
-  --port 5173 \
-  >"$FRONTEND_LOG" 2>&1 &
+cd "$FRONTEND_DIR"
+npm run preview -- --host localhost --port 5173 \
+  > "$LOG_DIR/frontend.log" \
+  2>&1 &
 
 FRONTEND_PID=$!
 
 FRONTEND_READY=false
 
-for attempt in $(seq 1 30); do
-  if curl -fsS \
-    "http://localhost:5173" \
-    >/dev/null 2>&1; then
-
+for _ in $(seq 1 30); do
+  if curl -fsS "http://localhost:5173" >/dev/null 2>&1; then
     FRONTEND_READY=true
     break
   fi
 
-  if ! kill -0 \
-    "$FRONTEND_PID" \
-    2>/dev/null; then
-
+  if ! kill -0 "$FRONTEND_PID" 2>/dev/null; then
     echo
-    echo "Frontend stopped unexpectedly."
-    echo
-    tail -n 50 "$FRONTEND_LOG"
-
-    fail "Frontend startup failed."
+    tail -n 50 "$LOG_DIR/frontend.log" || true
+    finish_with_error "Frontend stopped during startup."
   fi
 
   sleep 1
 done
 
-if [ "$FRONTEND_READY" != true ]; then
+if [ "$FRONTEND_READY" != "true" ]; then
   echo
-  tail -n 50 "$FRONTEND_LOG"
-
-  fail "Frontend did not start within 30 seconds."
+  tail -n 50 "$LOG_DIR/frontend.log" || true
+  finish_with_error "Frontend did not become ready."
 fi
 
-echo "Frontend started:"
-echo "http://localhost:5173"
-
 echo
-echo "======================================"
-echo " WalletWise started successfully"
-echo "======================================"
-echo
-echo "Website:"
+echo "WalletWise is ready:"
 echo "http://localhost:5173"
 echo
-echo "Backend:"
-echo "http://localhost:8080"
-echo
-echo "Backend log:"
-echo "$BACKEND_LOG"
-echo
-echo "Frontend log:"
-echo "$FRONTEND_LOG"
-echo
-echo "Press Control+C to stop WalletWise."
-echo
+echo "Keep this terminal window open while using the application."
 
 open "http://localhost:5173"
 
-wait
+echo
+read -r -p "Press Enter to stop WalletWise..."

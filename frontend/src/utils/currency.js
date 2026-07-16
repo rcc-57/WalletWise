@@ -1,64 +1,59 @@
-export const supportedCurrencies = [
+export const CURRENCY_OPTIONS = [
   {
+    code: 'USD',
     value: 'USD',
-    label: 'USD — US Dollar'
+    symbol: '$',
+    label: 'USD — US Dollar ($)',
   },
   {
+    code: 'EUR',
     value: 'EUR',
-    label: 'EUR — Euro'
+    symbol: '€',
+    label: 'EUR — Euro (€)',
   },
   {
+    code: 'GBP',
     value: 'GBP',
-    label: 'GBP — British Pound'
+    symbol: '£',
+    label: 'GBP — British Pound (£)',
   },
   {
+    code: 'CNY',
     value: 'CNY',
-    label: 'CNY — Chinese Yuan'
+    symbol: '¥',
+    label: 'CNY — Chinese Yuan (¥)',
   },
   {
+    code: 'RUB',
     value: 'RUB',
-    label: 'RUB — Russian Ruble'
-  }
+    symbol: '₽',
+    label: 'RUB — Russian Ruble (₽)',
+  },
 ]
 
-export function formatMoney(
-  value,
-  currency
-) {
-  const numericValue = Number(value || 0)
+// Оставлены дополнительные названия экспортов,
+// чтобы существующие компоненты продолжали работать.
+export const SUPPORTED_CURRENCIES = CURRENCY_OPTIONS
+export const supportedCurrencies = CURRENCY_OPTIONS
 
-  if (!currency) {
-    return new Intl.NumberFormat(
-      'en-US',
-      {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      }
-    ).format(numericValue)
-  }
+export function formatMoney(value, currency = 'USD') {
+  const numericValue = Number(value)
 
-  return new Intl.NumberFormat(
-    'en-US',
-    {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }
-  ).format(numericValue)
-}
-
-export function getCurrencyLabel(
-  currency
-) {
-  if (!currency) {
+  if (!Number.isFinite(numericValue)) {
     return ''
   }
 
-  const item = supportedCurrencies.find(
-    (currencyItem) =>
-      currencyItem.value === currency
+  const supportedCurrency = CURRENCY_OPTIONS.some(
+    (item) => item.code === currency,
   )
+    ? currency
+    : 'USD'
 
-  return item?.label || currency
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: supportedCurrency,
+    currencyDisplay: 'narrowSymbol',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(numericValue)
 }
