@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+
 import {
   computed,
   ref
@@ -8,7 +9,15 @@ import { useRouter } from 'vue-router'
 
 import apiClient from '@/api/client'
 
-function getErrorMessage(error, fallbackMessage) {
+import {
+  getCurrentProfile,
+  saveCurrentProfile
+} from '@/api/profile'
+
+function getErrorMessage(
+  error,
+  fallbackMessage
+) {
   return (
     error.response?.data?.message ||
     fallbackMessage
@@ -23,7 +32,9 @@ export const useAuthStore = defineStore(
     const user = ref(null)
 
     const token = ref(
-      localStorage.getItem('walletwise_token') || ''
+      localStorage.getItem(
+        'walletwise_token'
+      ) || ''
     )
 
     const loading = ref(false)
@@ -34,8 +45,11 @@ export const useAuthStore = defineStore(
     })
 
     function setAuthSession(authData) {
-      const newToken = authData?.token || ''
-      const newUser = authData?.user || null
+      const newToken =
+        authData?.token || ''
+
+      const newUser =
+        authData?.user || null
 
       token.value = newToken
       user.value = newUser
@@ -66,13 +80,16 @@ export const useAuthStore = defineStore(
       error.value = ''
 
       try {
-        const response = await apiClient.post(
-          '/api/auth/login',
-          {
-            username: credentials.username.trim(),
-            password: credentials.password
-          }
-        )
+        const response =
+          await apiClient.post(
+            '/api/auth/login',
+            {
+              username:
+                credentials.username.trim(),
+              password:
+                credentials.password
+            }
+          )
 
         setAuthSession(response.data)
 
@@ -99,13 +116,18 @@ export const useAuthStore = defineStore(
       error.value = ''
 
       try {
-        const response = await apiClient.post(
-          '/api/auth/register',
-          {
-            username: credentials.username.trim(),
-            password: credentials.password
-          }
-        )
+        const response =
+          await apiClient.post(
+            '/api/auth/register',
+            {
+              username:
+                credentials.username.trim(),
+              password:
+                credentials.password,
+              currency:
+                credentials.currency
+            }
+          )
 
         setAuthSession(response.data)
 
@@ -134,16 +156,43 @@ export const useAuthStore = defineStore(
       }
 
       try {
-        const response = await apiClient.get(
-          '/api/auth/me'
-        )
+        const currentUser =
+          await getCurrentProfile()
 
-        user.value = response.data
+        user.value = currentUser
 
-        return response.data
+        return currentUser
       } catch (requestError) {
         clearAuthSession()
         throw requestError
+      }
+    }
+
+    async function updateProfile(profile) {
+      loading.value = true
+      error.value = ''
+
+      try {
+        const updatedUser =
+          await saveCurrentProfile({
+            email:
+              profile.email?.trim() || null,
+            currency:
+              profile.currency
+          })
+
+        user.value = updatedUser
+
+        return updatedUser
+      } catch (requestError) {
+        error.value = getErrorMessage(
+          requestError,
+          'Unable to save profile changes.'
+        )
+
+        throw requestError
+      } finally {
+        loading.value = false
       }
     }
 
@@ -163,6 +212,7 @@ export const useAuthStore = defineStore(
       login,
       register,
       fetchCurrentUser,
+      updateProfile,
       logout,
       clearAuthSession
     }

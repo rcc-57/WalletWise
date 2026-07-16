@@ -1,111 +1,112 @@
 <script setup>
+import { computed } from 'vue'
 
-
-import { onMounted, ref } from 'vue'
-
-import Chart from 'chart.js/auto'
-
-
+import {
+  formatMoney
+} from '@/utils/currency'
 
 const props = defineProps({
+  data: {
+    type: Object,
+    required: true
+  },
 
-data:{
-type:Object,
-required:true
-}
-
+  currency: {
+    type: String,
+    default: ''
+  }
 })
 
+const chartOption = computed(() => {
+  const labels =
+    props.data?.labels || []
 
-const chart = ref(null)
+  const values =
+    props.data?.values || []
 
+  const chartData = labels.map(
+    (label, index) => ({
+      name: label,
+      value: Number(
+        values[index] || 0
+      )
+    })
+  )
 
+  return {
+    tooltip: {
+      trigger: 'item',
 
-onMounted(()=>{
+      formatter(parameters) {
+        const amount = formatMoney(
+          parameters.value,
+          props.currency
+        )
 
+        return (
+          `${parameters.name}<br />` +
+          `${amount} ` +
+          `(${parameters.percent}%)`
+        )
+      }
+    },
 
-new Chart(chart.value,{
+    legend: {
+      orient: 'vertical',
+      right: 10,
+      top: 'center'
+    },
 
+    series: [
+      {
+        name: 'Expenses',
+        type: 'pie',
+        radius: [
+          '45%',
+          '72%'
+        ],
+        center: [
+          '40%',
+          '50%'
+        ],
+        avoidLabelOverlap: true,
 
-type:'doughnut',
+        itemStyle: {
+          borderRadius: 8,
+          borderColor: '#ffffff',
+          borderWidth: 2
+        },
 
+        label: {
+          show: false
+        },
 
+        emphasis: {
+          label: {
+            show: true,
+            fontSize: 14,
+            fontWeight: 'bold'
+          }
+        },
 
-data:{
-
-
-labels:props.data.labels,
-
-
-datasets:[
-
-{
-
-
-data:props.data.values,
-
-
-backgroundColor:[
-
-'#3b82f6',
-'#22c55e',
-'#f59e0b',
-'#ef4444',
-'#8b5cf6'
-
-]
-
-
-}
-
-]
-
-
-},
-
-
-
-options:{
-
-
-responsive:true,
-
-
-plugins:{
-
-
-legend:{
-
-
-position:'right'
-
-
-}
-
-
-}
-
-
-}
-
-
-
+        data: chartData
+      }
+    ]
+  }
 })
-
-
-})
-
-
-
 </script>
 
-
-
-
 <template>
-
-
-<canvas ref="chart"></canvas>
-
-
+  <v-chart
+    class="chart"
+    :option="chartOption"
+    autoresize
+  />
 </template>
+
+<style scoped>
+.chart {
+  width: 100%;
+  height: 330px;
+}
+</style>

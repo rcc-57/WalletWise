@@ -1,262 +1,427 @@
 <script setup>
-import { computed, reactive, ref } from 'vue'
+import {
+  computed,
+  onMounted,
+  reactive,
+  ref,
+  watch
+} from 'vue'
+
+import { ElMessage } from 'element-plus'
+
 import { useAuthStore } from '@/stores/auth'
-import { User, Coin, Document } from '@element-plus/icons-vue'
+
+import {
+  getCurrencyLabel,
+  supportedCurrencies
+} from '@/utils/currency'
 
 const authStore = useAuthStore()
 
-const profileForm = reactive({
-  username: authStore.user?.username || 'WalletWise User',
-  email: 'you@example.com',
-  monthlyGoal: 5000
+const form = reactive({
+  username: '',
+  email: '',
+  currency: ''
 })
 
 const savedMessage = ref('')
-const displayName = computed(() => authStore.user?.username || profileForm.username)
 
-function saveProfile() {
-  savedMessage.value = 'Profile details have been updated locally for now.'
+const initials = computed(() => {
+  const username =
+    authStore.user?.username || ''
+
+  return username
+    .slice(0, 2)
+    .toUpperCase()
+})
+
+const createdAtLabel = computed(() => {
+  const createdAt =
+    authStore.user?.createdAt
+
+  if (!createdAt) {
+    return ''
+  }
+
+  return new Date(
+    createdAt
+  ).toLocaleDateString()
+})
+
+const currencyLabel = computed(() => {
+  return getCurrencyLabel(
+    authStore.user?.currency
+  )
+})
+
+function fillFormFromUser(user) {
+  form.username =
+    user?.username || ''
+
+  form.email =
+    user?.email || ''
+
+  form.currency =
+    user?.currency || ''
+}
+
+function validateEmail(email) {
+  if (!email) {
+    return true
+  }
+
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+    email
+  )
+}
+
+async function saveProfile() {
+  savedMessage.value = ''
+
+  const normalizedEmail =
+    form.email.trim()
+
+  if (
+    !validateEmail(normalizedEmail)
+  ) {
+    ElMessage.warning(
+      'Please enter a valid email address.'
+    )
+
+    return
+  }
+
+  if (!form.currency) {
+    ElMessage.warning(
+      'Please select a currency.'
+    )
+
+    return
+  }
+
+  try {
+    await authStore.updateProfile({
+      email:
+        normalizedEmail || null,
+      currency:
+        form.currency
+    })
+
+    savedMessage.value =
+      'Profile saved successfully.'
+
+    ElMessage.success(
+      'Profile saved successfully.'
+    )
+  } catch {
+    ElMessage.error(
+      authStore.error ||
+        'Unable to save profile.'
+    )
+  }
 }
 
 function resetProfile() {
-  profileForm.username = authStore.user?.username || 'WalletWise User'
-  profileForm.email = 'you@example.com'
-  profileForm.monthlyGoal = 5000
+  fillFormFromUser(
+    authStore.user
+  )
+
   savedMessage.value = ''
 }
+
+watch(
+  () => authStore.user,
+  (user) => {
+    fillFormFromUser(user)
+  },
+  {
+    immediate: true,
+    deep: true
+  }
+)
+
+onMounted(async () => {
+  if (!authStore.user) {
+    try {
+      await authStore.fetchCurrentUser()
+    } catch {
+      ElMessage.error(
+        'Unable to load profile.'
+      )
+    }
+  }
+})
 </script>
 
 <template>
-  <div class="page">
+  <div class="profile-page">
     <div class="page-header">
       <div>
         <h1>Profile</h1>
-        <p>Keep your account details and targets organized</p>
+
+        <p>
+          Manage your account information
+          and preferred currency
+        </p>
       </div>
     </div>
 
-    <div class="hero-card">
-      <div class="avatar-section">
-        <div class="avatar">{{ displayName.slice(0, 2).toUpperCase() }}</div>
-        <div>
-          <h2>{{ displayName }}</h2>
-          <p>Premium finance planning</p>
-        </div>
+    <div
+      class="profile-hero"
+      v-loading="authStore.loading"
+    >
+      <div class="avatar">
+        {{ initials }}
       </div>
-      <div class="hero-stats">
-        <div>
-          <span>Active goals</span>
-          <strong>3</strong>
-        </div>
-        <div>
-          <span>Monthly target</span>
-          <strong>${{ profileForm.monthlyGoal.toLocaleString() }}</strong>
-        </div>
-      </div>
-    </div>
 
-    <div class="content-grid">
-      <el-card shadow="never" class="card">
-        <template #header>
-          <div class="card-header">
-            <span>Personal information</span>
-          </div>
-        </template>
+      <div class="hero-content">
+        <h2>
+          {{ authStore.user?.username }}
+        </h2>
 
-        <el-form label-position="top">
-          <el-form-item label="Username">
-            <el-input v-model="profileForm.username" placeholder="Enter your username" />
-          </el-form-item>
+        <p v-if="authStore.user?.email">
+          {{ authStore.user.email }}
+        </p>
 
-          <el-form-item label="Email">
-            <el-input v-model="profileForm.email" placeholder="you@example.com" />
-          </el-form-item>
-
-          <el-form-item label="Monthly goal">
-            <el-input-number v-model="profileForm.monthlyGoal" :min="0" style="width: 100%;" />
-          </el-form-item>
-
-          <div class="actions">
-            <el-button type="primary" @click="saveProfile">Save changes</el-button>
-            <el-button @click="resetProfile">Reset</el-button>
-          </div>
-
-          <p v-if="savedMessage" class="helper-text">{{ savedMessage }}</p>
-        </el-form>
-      </el-card>
-
-      <div class="stack">
-        <el-card shadow="never" class="card">
-          <template #header>
-            <div class="card-header">
-              <span>Account summary</span>
-            </div>
-          </template>
-
-          <div class="summary-list">
-            <div class="summary-item">
-              <el-icon><User /></el-icon>
-              <div>
-                <strong>Signed in as</strong>
-                <p>{{ displayName }}</p>
-              </div>
-            </div>
-            <div class="summary-item">
-              <el-icon><Coin /></el-icon>
-              <div>
-                <strong>Current savings goal</strong>
-                <p>${{ profileForm.monthlyGoal.toLocaleString() }}</p>
-              </div>
-            </div>
-            <div class="summary-item">
-              <el-icon><Document /></el-icon>
-              <div>
-                <strong>Plan status</strong>
-                <p>Ready for the next month</p>
-              </div>
-            </div>
-          </div>
-        </el-card>
+        <p v-else>
+          No email added
+        </p>
       </div>
     </div>
+
+    <el-card
+      shadow="never"
+      class="profile-card"
+    >
+      <template #header>
+        <div class="card-header">
+          Account details
+        </div>
+      </template>
+
+      <el-form
+        label-position="top"
+        @submit.prevent="saveProfile"
+      >
+        <el-form-item label="Username">
+          <el-input
+            v-model="form.username"
+            readonly
+          />
+
+          <p class="field-hint">
+            Username is created during
+            registration and cannot be changed.
+          </p>
+        </el-form-item>
+
+        <el-form-item label="Email">
+          <el-input
+            v-model="form.email"
+            type="email"
+            maxlength="255"
+            placeholder="Add your email address"
+            clearable
+          />
+        </el-form-item>
+
+        <el-form-item
+          label="Currency"
+          required
+        >
+          <el-select
+            v-model="form.currency"
+            placeholder="Select your currency"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="currency in supportedCurrencies"
+              :key="currency.value"
+              :label="currency.label"
+              :value="currency.value"
+            />
+          </el-select>
+        </el-form-item>
+
+        <div class="account-information">
+          <div>
+            <span>Current currency</span>
+
+            <strong>
+              {{ currencyLabel }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Account created</span>
+
+            <strong>
+              {{ createdAtLabel }}
+            </strong>
+          </div>
+        </div>
+
+        <div class="actions">
+          <el-button
+            type="primary"
+            native-type="submit"
+            :loading="authStore.loading"
+          >
+            Save changes
+          </el-button>
+
+          <el-button
+            :disabled="authStore.loading"
+            @click="resetProfile"
+          >
+            Reset
+          </el-button>
+        </div>
+
+        <p
+          v-if="savedMessage"
+          class="success-message"
+        >
+          {{ savedMessage }}
+        </p>
+
+        <p
+          v-if="authStore.error"
+          class="error-message"
+        >
+          {{ authStore.error }}
+        </p>
+      </el-form>
+    </el-card>
   </div>
 </template>
 
 <style scoped>
-.page {
+.profile-page {
   display: flex;
+  max-width: 900px;
   flex-direction: column;
   gap: 20px;
 }
 
 .page-header h1 {
+  margin: 0 0 6px;
+  color: #111827;
   font-size: 32px;
   font-weight: 700;
-  color: #111827;
-  margin-bottom: 6px;
 }
 
 .page-header p {
-  font-size: 14px;
+  margin: 0;
   color: #64748b;
+  font-size: 14px;
 }
 
-.hero-card {
-  background: linear-gradient(135deg, #111827, #1f2937);
-  color: white;
-  border-radius: 20px;
+.profile-hero {
+  display: flex;
   padding: 24px;
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
-}
-
-.avatar-section {
-  display: flex;
-  align-items: center;
-  gap: 14px;
+  gap: 16px;
+  border-radius: 20px;
+  background: linear-gradient(
+    135deg,
+    #111827,
+    #1f2937
+  );
+  color: white;
+  box-shadow: 0 10px 30px
+    rgba(15, 23, 42, 0.12);
 }
 
 .avatar {
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
   display: flex;
-  align-items: center;
+  width: 58px;
+  height: 58px;
   justify-content: center;
-  background: linear-gradient(135deg, #2563eb, #60a5fa);
+  align-items: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    #2563eb,
+    #60a5fa
+  );
   font-weight: 700;
 }
 
-.avatar-section h2 {
-  margin: 0 0 4px;
-  font-size: 20px;
+.hero-content h2 {
+  margin: 0 0 5px;
+  font-size: 22px;
 }
 
-.avatar-section p {
+.hero-content p {
   margin: 0;
   color: #cbd5e1;
 }
 
-.hero-stats {
-  display: flex;
-  gap: 20px;
-}
-
-.hero-stats div {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 110px;
-}
-
-.hero-stats span {
-  color: #cbd5e1;
-  font-size: 12px;
-}
-
-.hero-stats strong {
-  font-size: 16px;
-}
-
-.content-grid {
-  display: grid;
-  grid-template-columns: 1.4fr 1fr;
-  gap: 20px;
-}
-
-.card {
+.profile-card {
   border-radius: 18px;
 }
 
 .card-header {
+  color: #111827;
   font-weight: 600;
+}
+
+.field-hint {
+  margin: 6px 0 0;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.account-information {
+  display: grid;
+  grid-template-columns: repeat(
+    2,
+    minmax(0, 1fr)
+  );
+  gap: 16px;
+  margin: 8px 0 20px;
+}
+
+.account-information div {
+  display: flex;
+  padding: 14px;
+  flex-direction: column;
+  gap: 5px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.account-information span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.account-information strong {
+  min-height: 20px;
   color: #111827;
 }
 
 .actions {
   display: flex;
   gap: 12px;
-  margin-top: 8px;
 }
 
-.helper-text {
+.success-message {
   margin-top: 12px;
-  color: #2563eb;
+  color: #16a34a;
 }
 
-.summary-list {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+.error-message {
+  margin-top: 12px;
+  color: #dc2626;
 }
 
-.summary-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.summary-item strong {
-  color: #111827;
-}
-
-.summary-item p {
-  margin-top: 4px;
-  color: #64748b;
-}
-
-@media (max-width: 900px) {
-  .content-grid,
-  .hero-card {
+@media (max-width: 700px) {
+  .account-information {
     grid-template-columns: 1fr;
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .hero-stats {
-    margin-top: 12px;
   }
 }
 </style>

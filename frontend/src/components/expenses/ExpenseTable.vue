@@ -1,4 +1,10 @@
 <script setup>
+import { useAuthStore } from '@/stores/auth'
+
+import {
+  formatMoney
+} from '@/utils/currency'
+
 const props = defineProps({
   expenses: {
     type: Array,
@@ -6,7 +12,19 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['edit', 'delete'])
+const emit = defineEmits([
+  'edit',
+  'delete'
+])
+
+const authStore = useAuthStore()
+
+function formatAmount(amount) {
+  return formatMoney(
+    amount,
+    authStore.user?.currency
+  )
+}
 
 function editExpense(expense) {
   emit('edit', expense)
@@ -19,20 +37,64 @@ function deleteExpense(id) {
 
 <template>
   <div class="table-card">
-    <el-table :data="props.expenses" stripe border style="width: 100%" class="custom-table">
-      <el-table-column prop="date" label="Date" width="140" />
-      <el-table-column prop="category" label="Category" width="160" />
-      <el-table-column prop="amount" label="Amount" width="160">
+    <el-table
+      :data="props.expenses"
+      stripe
+      border
+      style="width: 100%"
+      class="custom-table"
+      empty-text="No expense records"
+    >
+      <el-table-column
+        prop="date"
+        label="Date"
+        width="140"
+      />
+
+      <el-table-column
+        prop="category"
+        label="Category"
+        width="160"
+      />
+
+      <el-table-column
+        prop="amount"
+        label="Amount"
+        width="180"
+      >
         <template #default="scope">
-          <span class="amount">${{ scope.row.amount.toFixed(2) }}</span>
+          <span class="amount">
+            {{ formatAmount(scope.row.amount) }}
+          </span>
         </template>
       </el-table-column>
-      <el-table-column prop="remark" label="Remark" />
-      <el-table-column label="Actions" width="200">
+
+      <el-table-column
+        prop="remark"
+        label="Remark"
+      />
+
+      <el-table-column
+        label="Actions"
+        width="200"
+      >
         <template #default="scope">
           <div class="action-group">
-            <el-button type="primary" size="small" @click="editExpense(scope.row)">Edit</el-button>
-            <el-button type="danger" size="small" @click="deleteExpense(scope.row.id)">Delete</el-button>
+            <el-button
+              type="primary"
+              size="small"
+              @click="editExpense(scope.row)"
+            >
+              Edit
+            </el-button>
+
+            <el-button
+              type="danger"
+              size="small"
+              @click="deleteExpense(scope.row.id)"
+            >
+              Delete
+            </el-button>
           </div>
         </template>
       </el-table-column>
@@ -42,13 +104,15 @@ function deleteExpense(id) {
 
 <style scoped>
 .table-card {
-  background: white;
-  border-radius: 18px;
   padding: 16px;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  border-radius: 18px;
+  background: white;
+  box-shadow: 0 10px 30px
+    rgba(15, 23, 42, 0.06);
 }
 
-.custom-table :deep(.el-table__header-wrapper th) {
+.custom-table
+  :deep(.el-table__header-wrapper th) {
   background: #f8fafc;
   color: #475569;
 }
@@ -59,7 +123,7 @@ function deleteExpense(id) {
 }
 
 .amount {
-  font-weight: 700;
   color: #ef4444;
+  font-weight: 700;
 }
 </style>

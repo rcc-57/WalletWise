@@ -1,6 +1,7 @@
 package com.walletwise.backend.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record RegisterRequest(
@@ -19,6 +20,13 @@ public record RegisterRequest(
                 max = 72,
                 message = "Password must contain 6-72 characters"
         )
-        String password
+        String password,
+
+        @NotBlank(message = "Currency is required")
+        @Pattern(
+                regexp = "USD|EUR|GBP|CNY|RUB",
+                message = "Unsupported currency"
+        )
+        String currency
 ) {
 }
